@@ -1,6 +1,6 @@
 {
       "compilerOptions": {
-            "rootDir": ".",
+            "rootDir": "..",
             "outDir": "./dist",
             "module": "commonjs",
             "target": "es2022",
@@ -20,10 +20,10 @@
             "moduleDetection": "force",
             "skipLibCheck": true,
             "paths": {
-                  "@routes/*": ["./routes/*"],
-                  "@modules/*": ["./modules/*"],
-                  "@middlewares/*": ["./middlewares/*"],
-                  "@share/*": ["./share/*"]
+                  "@routes/*": ["./src/routes/*"],
+                  "@modules/*": ["./src/modules/*"],
+                  "@middlewares/*": ["./src/middlewares/*"],
+                  "@shared/*": ["../shared/*"]
             }
       }
 }
