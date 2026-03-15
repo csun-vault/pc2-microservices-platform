@@ -23,7 +23,9 @@
                   "@routes/*": ["./src/routes/*"],
                   "@modules/*": ["./src/modules/*"],
                   "@middlewares/*": ["./src/middlewares/*"],
-                  "@shared/*": ["../shared/*"]
+                  "@shared/*": ["../shared/*"],
+                  "@libs/*": ["./src/libs/*"],
+                  "@type/*": ["./src/types/*"]
             }
       }
 }

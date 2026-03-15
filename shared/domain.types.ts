@@ -32,9 +32,13 @@ export type BuildMetadata = {
 }
 
 export type ServiceContainerRef = {
+    status: string;
     containerId?: string;
-    conainerName: string;
-    imageId?: string;
+    containerName: string;
+    image: {
+        id : string,
+        name? : string,
+    };
 }
 
 // ====================================================

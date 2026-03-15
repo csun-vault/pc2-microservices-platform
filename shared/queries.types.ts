@@ -6,3 +6,4 @@ export type ErrorTypes =
     | "NOT_FOUND"
     | "CONFLICT"
     | "INTERNAL_ERROR"
+    | "SERVICE_UNAVAILABLE"

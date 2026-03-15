@@ -1,4 +1,5 @@
 import { Router } from "express";
+import * as mc from "./microservices.controller";
 
 const router = Router();
 
@@ -30,7 +31,10 @@ router.delete("/:id/delete", (_req, res) => {res.json({status: "ok"})});
 router.get("/:id/logs", (_req, res) => {res.json({status: "ok"})});
 
 
-// Acciones de observavilidad
+// Acciones de observabilidad
+// 🟩 GET - Tomar la info del daemon de Docker - services/docker/version
+router.get("/docker/version", (_req, res) => {res.json({status: "ok"})});
+
 // 🟩 GET - Validar respuesta microservicio por ID - services/:id/health
 router.get("/:id/health", (_req, res) => {res.json({status: "ok"})});
 

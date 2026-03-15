@@ -7,8 +7,10 @@ import express from "express";
 
 // Import rutas
 import { healthRoutes } from "@routes/health.routes"
+import { dockerRoutes } from "@modules/docker/docker.routes";
 import { microservicesRoutes } from "@modules/microservices/microservices.routes";
-import { errorHandlerMiddleware } from "./middlewares/errorHandler";
+import { errorHandlerMiddleware } from "./middlewares/errorHandler.middleware";
+import { dockerGuard } from "@middlewares/dockerGuard.middleware";
 
 // Express
 export const app = express();
@@ -20,7 +22,8 @@ app.use(express.urlencoded({ extended:true }))
 
 // Inicializar rutas
 app.use("/health", healthRoutes)
-app.use("/services", microservicesRoutes)
+app.use("/services", dockerGuard, microservicesRoutes)
+app.use("/docker", dockerRoutes)
 
 // Error Handler
 app.use(errorHandlerMiddleware);
