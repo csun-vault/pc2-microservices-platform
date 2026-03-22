@@ -1,0 +1,54 @@
+/* InicioPage */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 20px 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerIcon {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.headerTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: -apple-system, "SF Pro Rounded", "Helvetica Neue", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.headerAction {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.headerAction:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.08);
+}
+
+.body {
+  flex: 1;
+}

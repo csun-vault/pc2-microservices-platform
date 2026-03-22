@@ -1,9 +1,13 @@
-import React from "react";
+import AppRouter from "./routes/AppRouter";
 
-export default function App() {
-      return (
-            <div style={{ fontFamily: "system-ui", padding: 16 }}>
-                  Hola
-            </div>
-      );
-}
+/**
+ * App — punto de entrada de la aplicación.
+ *
+ * Solo monta el router. El BrowserRouter vive en main.tsx
+ * para que esté disponible en toda la app desde el inicio.
+ */
+const App: React.FC = () => {
+  return <AppRouter />;
+};
+
+export default App;

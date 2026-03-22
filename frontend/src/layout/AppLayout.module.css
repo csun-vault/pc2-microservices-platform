@@ -1,0 +1,109 @@
+/* ============================================================
+   AppLayout — CSS Module
+   Fondo dark con blobs blur animados (sin imágenes, CSS puro)
+   ============================================================ */
+
+/* ---------- Root del layout ------------------------------- */
+.root {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+
+  /* Color base — ajusta a tu paleta */
+  background: #151320;
+}
+
+/* ---------- Blobs decorativos ----------------------------- */
+/* Todos con pointer-events:none para no interferir con la UI */
+
+/* Blob púrpura — derecha centro (el que se ve en tu screenshot) */
+.blobPurple {
+  position: absolute;
+  width: 600px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(130, 70, 180, 0.38) 0%,
+    rgba(100, 40, 160, 0.15) 55%,
+    transparent 100%
+  );
+  filter: blur(80px);
+  top: 20%;
+  right: -120px;
+  pointer-events: none;
+  will-change: transform;
+  animation: blobDriftA 10s ease-in-out infinite;
+}
+
+/* Blob teal — izquierda inferior */
+.blobTeal {
+  position: absolute;
+  width: 460px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(30, 130, 155, 0.28) 0%,
+    rgba(20, 100, 120, 0.10) 55%,
+    transparent 100%
+  );
+  filter: blur(90px);
+  bottom: 10%;
+  left: -80px;
+  pointer-events: none;
+  will-change: transform;
+  animation: blobDriftB 13s ease-in-out infinite;
+}
+
+/* Blob sutil central — profundidad extra */
+.blobCenter {
+  position: absolute;
+  width: 500px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(80, 50, 140, 0.18) 0%,
+    transparent 70%
+  );
+  filter: blur(100px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  will-change: transform;
+  animation: blobDriftC 16s ease-in-out infinite;
+}
+
+/* ---------- Animaciones de derive suave ------------------- */
+@keyframes blobDriftA {
+  0%, 100% { transform: translate(0,   0)   scale(1);    }
+  33%       { transform: translate(-30px, 20px) scale(1.06); }
+  66%       { transform: translate(15px, -25px) scale(0.96); }
+}
+
+@keyframes blobDriftB {
+  0%, 100% { transform: translate(0,   0)   scale(1);    }
+  40%       { transform: translate(25px, -20px) scale(1.08); }
+  75%       { transform: translate(-15px, 15px) scale(0.94); }
+}
+
+@keyframes blobDriftC {
+  0%, 100% { transform: translate(-50%, -50%) scale(1);    }
+  50%       { transform: translate(-50%, -50%) scale(1.12); }
+}
+
+/* ---------- Área de contenido principal ------------------- */
+/*
+  El contenido ocupa todo el espacio disponible.
+  padding-bottom deja espacio para que la navbar fixed
+  no tape el contenido inferior de cada página.
+*/
+.content {
+  position: relative;   /* encima de los blobs */
+  z-index: 1;
+  min-height: 100vh;
+  padding-bottom: 120px; /* navbar fija de ~76px + margen */
+}
