@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Icon } from "../../components/Icons";
+import { BaseCard } from "../../components/Cards/BaseCard";
 import {
   fetchServices,
   startService,
@@ -38,7 +39,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
     styles.statusDotStopped;
 
   return (
-    <div className={styles.card}>
+    <BaseCard variant="normal" padding="sm" radius="lg" className={styles.cardInner} tilt tiltMax={2}>
       <span className={styles.cardIndex}>{index}</span>
 
       {/* Fila superior */}
@@ -111,7 +112,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           <Icon name="layout" width={13} height={13} />
         </button>
       </div>
-    </div>
+    </BaseCard>
   );
 };
 

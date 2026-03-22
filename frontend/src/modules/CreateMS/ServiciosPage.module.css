@@ -61,22 +61,13 @@
   gap: 12px;
 }
 
-/* ---------- Card ------------------------------------------ */
-.card {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 14px;
+/* .card reemplazado por BaseCard — solo override puntual */
+.cardInner {
+  /* BaseCard gestiona el glass. Solo añadimos lo específico de ServiceCard */
+  position: relative;   /* para el cardIndex absoluto */
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: background 0.2s ease, border-color 0.2s ease;
-  position: relative;
-}
-
-.card:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.18);
 }
 
 /* Número de índice */

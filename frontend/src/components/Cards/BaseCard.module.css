@@ -1,0 +1,185 @@
+/* ============================================================
+   BaseCard — LiquidGlass multicapa + Tilt 3D + Spotlight
+   ============================================================ */
+
+/* ---------- Base ------------------------------------------ */
+.card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  /* perspective necesaria para que el tilt 3D funcione */
+  transform-style: preserve-3d;
+  transition:
+    box-shadow   0.28s ease,
+    background   0.28s ease,
+    border-color 0.28s ease;
+  /* El transform del tilt se maneja via JS inline para precisión */
+}
+
+/* ---- Capa 1: reflejo superior (highlight de vidrio) ------- */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    168deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 30%,
+    rgba(255, 255, 255, 0.00) 65%
+  );
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.28s ease;
+}
+
+/* ---- Capa 2: inner ring (grosor del vidrio) --------------- */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0  1px 0    rgba(255, 255, 255, 0.30),
+    inset 0 -1px 0    rgba(0,   0,   0,   0.15),
+    inset  1px 0 0    rgba(255, 255, 255, 0.12),
+    inset -1px 0 0    rgba(0,   0,   0,   0.08);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ---- Capa 3: Spotlight (sigue al cursor) ------------------ */
+/*
+  Se posiciona via CSS custom properties --mouse-x / --mouse-y
+  que el hook actualiza en tiempo real con el movimiento del mouse.
+  El gradiente radial crea el efecto de "linterna" sobre el glass.
+*/
+.spotlight {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* El gradiente se centra en la posición del cursor */
+  background: radial-gradient(
+    circle 120px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Spotlight visible solo cuando el mouse está sobre la card */
+.card:hover .spotlight {
+  opacity: 1;
+}
+
+/* ============================================================
+   Variantes de intensidad
+   ============================================================ */
+.variantSubtle {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px) saturate(130%);
+  -webkit-backdrop-filter: blur(8px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0  4px 16px rgba(0, 0, 0, 0.18),
+    0  1px  4px rgba(0, 0, 0, 0.12);
+}
+
+.variantNormal {
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0  8px 32px rgba(0, 0, 0, 0.25),
+    0  2px  8px rgba(0, 0, 0, 0.15);
+}
+
+.variantStrong {
+  background: rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(36px) saturate(200%) brightness(1.06);
+  -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(1.06);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.32),
+    0  4px 16px rgba(0, 0, 0, 0.20);
+}
+
+/* ============================================================
+   Stroke
+   ============================================================ */
+.strokeNone    { border-color: transparent; }
+.strokeDefault { /* hereda de variante */ }
+.strokeAccent  {
+  border-color: rgba(160, 100, 255, 0.45);
+  box-shadow:
+    0 0  0   1px rgba(160, 100, 255, 0.15),
+    0 12px 40px rgba(0,   0,   0,   0.30),
+    0  0  60px rgba(130,  60, 230,  0.12);
+}
+
+/* ============================================================
+   Hover sin tilt (cards no interactivas con onClick)
+   ============================================================ */
+.interactive { cursor: pointer; }
+
+.interactive:hover.variantSubtle {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.interactive:hover.variantNormal {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+.interactive:hover.variantStrong {
+  background: rgba(255, 255, 255, 0.17);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+/* ============================================================
+   Tilt — estado de elevación mientras el mouse está encima
+   El transform real (rotateX/Y) se aplica inline via JS.
+   Aquí solo controlamos la sombra de profundidad.
+   ============================================================ */
+.tiltActive {
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.40),
+    0  8px 20px rgba(0, 0, 0, 0.25),
+    0  0   0 1px rgba(255, 255, 255, 0.08) inset;
+  /* La transición del transform se maneja en JS para seguir el mouse
+     sin lag — no usamos CSS transition en transform cuando hay tilt */
+}
+
+/* Vuelta a reposo — sí usamos transición aquí para el "spring back" */
+.tiltResting {
+  transition:
+    transform    0.55s cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow   0.55s cubic-bezier(0.23, 1, 0.32, 1),
+    background   0.28s ease,
+    border-color 0.28s ease;
+}
+
+/* ============================================================
+   Padding
+   ============================================================ */
+.paddingNone { padding: 0; }
+.paddingXs   { padding: 8px; }
+.paddingSm   { padding: 12px; }
+.paddingMd   { padding: 16px; }
+.paddingLg   { padding: 24px; }
+.paddingXl   { padding: 32px; }
+
+/* ============================================================
+   Border radius
+   ============================================================ */
+.radiusNone  { border-radius: 0; }
+.radiusSm    { border-radius: 8px; }
+.radiusMd    { border-radius: 12px; }
+.radiusLg    { border-radius: 16px; }
+.radiusXl    { border-radius: 20px; }
+.radius2xl   { border-radius: 28px; }
+.radiusFull  { border-radius: 9999px; }
