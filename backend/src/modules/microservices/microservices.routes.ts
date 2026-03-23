@@ -8,7 +8,8 @@ const router = Router();
 router.get("/", (_req, res) => {res.json({status: "ok"})});
 
 // 🟨 POST - Crear Microservicios - services/
-router.post("/", (_req, res) => {res.json({status: "ok"})});
+//router.post("/", (_req, res) => {res.json({status: "ok"})});
+router.post("/", mc.createService);
 
 // 🟩 GET - Info microservicio por ID - services/:id
 router.get("/:id", (_req, res) => {res.json({status: "ok"})});
