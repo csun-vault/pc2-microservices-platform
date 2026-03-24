@@ -3,6 +3,7 @@ import type { ServicesLanguage } from "@shared/domain.types";
 
 export type CreateServiceBody = {
     name        : string;
+    description : string;
     language    : ServicesLanguage;
     sourceCode  : string;
     port        : number;
@@ -14,7 +15,7 @@ export function validateCreateServiceBody(body: unknown): CreateServiceBody {
     if (!body || typeof body !== "object")
         throw new HTTPError({ statusCode: 400, type: "BAD_REQUEST", message: "El body no puede estar vacío" });
 
-    const { name, language, sourceCode, port } = body as Record<string, unknown>;
+    const { name, description, language, sourceCode, port } = body as Record<string, unknown>;
 
     // Para el nombre, validaciones del contenido
     if (!name || typeof name !== "string" || name.trim().length === 0)
@@ -27,7 +28,11 @@ export function validateCreateServiceBody(body: unknown): CreateServiceBody {
             message: "El campo 'name' solo puede contener letras, números y guiones (ej: mi-servicio)",
         });
 
-    // Lenguage escogido ?
+    // Descripción no vacía
+    if (!description || typeof description !== "string" || description.trim().length === 0)
+        throw new HTTPError({ statusCode: 400, type: "VALIDATION_ERROR", message: "El campo 'description' es requerido" });
+    
+        // Lenguage escogido ?
     if (!language || !SUPPORTED_LANGUAGES.includes(language as ServicesLanguage))
         throw new HTTPError({
             statusCode: 400,
@@ -50,6 +55,7 @@ export function validateCreateServiceBody(body: unknown): CreateServiceBody {
 
     return {
         name        : name.trim(),
+        description : description.trim(),
         language    : language as ServicesLanguage,
         sourceCode  : sourceCode.trim(),
         port        : parsedPort,

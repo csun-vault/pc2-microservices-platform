@@ -4,11 +4,14 @@ import * as dockerService from "@libs/docker/docker.service";
 import { HTTPError } from "@modules/app/error.model";
 import type { CreateServiceBody } from "./microservices.schema";
 import type { ServiceRecord } from "@shared/domain.types";
+import { SOURCE_FILENAME } from "@libs/docker/docker.service";
+import * as path from "path";
+import * as fs from "fs/promises";
 
 const HOST = process.env.HOST ?? "localhost";
 
 export async function createMicroservice(body: CreateServiceBody): Promise<ServiceRecord> {
-    const { name, language, sourceCode, port } = body;
+    const { name, description, language, sourceCode, port } = body;
 
     // Ver si no existe en el registro
     const existing = await registry.readRegistry();
@@ -60,6 +63,18 @@ export async function createMicroservice(body: CreateServiceBody): Promise<Servi
     // Queda en el registro antes del build
     await registry.appendService(record);
 
+    // Crear carpeta del microservicio, se guarda codigo y medatdata (confirmar)
+    const serviceDir = path.join(process.cwd(), "microservices", id);
+    await fs.mkdir(serviceDir, { recursive: true });
+
+    await fs.writeFile(path.join(serviceDir, SOURCE_FILENAME[language]), sourceCode, "utf-8");
+
+    await fs.writeFile(
+        path.join(serviceDir, "service.json"),
+        JSON.stringify({ id, language, port, createdAt: now }, null, 2),
+        "utf-8"
+    );
+
     try {
         await dockerService.buildImageFromSource({ serviceId: id, language, sourceCode, port, imageName });
 
@@ -81,7 +96,6 @@ export async function createMicroservice(body: CreateServiceBody): Promise<Servi
         return { ...record, ...updated };
 
     } catch (err: any) {
-        // Guarda ERROR en el registro si falla el build
         await registry.updateService(id, {
             metadata: { ...record.metadata, status: "ERROR", updatedAt: new Date().toISOString() },
         });
@@ -93,4 +107,27 @@ export async function createMicroservice(body: CreateServiceBody): Promise<Servi
             details    : err?.message ?? String(err),
         });
     }
+}
+
+export async function listMicroservices() {
+    const services = await registry.getAllServices();
+
+    // Llamada a Docker para la lista de contenedores
+    const containers = await dockerService.getContainerList();
+
+    return services.map((service) => {
+        const match = containers.find(
+            (c) => c.containerName === service.container.containerName
+        );
+
+        const runtimeStatus = match?.status ?? "stopped"; // Caso donde no esté en la lista de contenedores
+        const status = runtimeStatus === "running" ? "UP"
+                     : !match                      ? "ERROR"
+                     : "DOWN";
+
+        return {
+            ...service,
+            metadata: { ...service.metadata, runtimeStatus, status },
+        };
+    });
 }

@@ -5,7 +5,8 @@ const router = Router();
 
 // Acciones generales
 // 🟩 GET - Listar Microservicios - services/
-router.get("/", (_req, res) => {res.json({status: "ok"})});
+//router.get("/", (_req, res) => {res.json({status: "ok"})});
+router.get("/", mc.listServices);
 
 // 🟨 POST - Crear Microservicios - services/
 //router.post("/", (_req, res) => {res.json({status: "ok"})});

@@ -70,7 +70,7 @@ CMD ["python", "main.py"]
 };
 
 // Nombre del archivo según el lenguaje
-const SOURCE_FILENAME: Record<ServicesLanguage, string> = {
+export const SOURCE_FILENAME: Record<ServicesLanguage, string> = {
     node   : "index.js",
     python : "main.py",
 };

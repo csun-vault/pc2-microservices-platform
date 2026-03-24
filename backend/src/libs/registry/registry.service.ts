@@ -41,3 +41,8 @@ export async function findServiceById(id: string): Promise<ServiceRecord | null>
     const registry = await readRegistry();
     return registry.services.find((s) => s.metadata.id === id) ?? null;
 }
+// Para obtener listado de los microservicios
+export async function getAllServices(): Promise<ServiceRecord[]> {
+    const registry = await readRegistry();
+    return registry.services;
+}
