@@ -63,7 +63,7 @@ export async function createMicroservice(body: CreateServiceBody): Promise<Servi
     // Queda en el registro antes del build
     await registry.appendService(record);
 
-    // Crear carpeta del microservicio, se guarda codigo y medatdata (confirmar)
+    // Crear carpeta del microservicio, se guarda codigo y metadata (confirmar)
     const serviceDir = path.join(process.cwd(), "microservices", id);
     await fs.mkdir(serviceDir, { recursive: true });
 
@@ -86,7 +86,7 @@ export async function createMicroservice(body: CreateServiceBody): Promise<Servi
             externalPort: port,
         });
 
-        // Actualizar el registro con el estado final
+        // Se actualiza el registro con el estado final
         const updated: Partial<ServiceRecord> = {
             metadata : { ...record.metadata, status: "UP", runtimeStatus: "running", updatedAt: new Date().toISOString() },
             container: { status: "running", containerId, containerName, image: { id: containerId, name: imageName } },
@@ -130,4 +130,81 @@ export async function listMicroservices() {
             metadata: { ...service.metadata, runtimeStatus, status },
         };
     });
+}
+
+export async function getMicroserviceById(id: string) {
+    const service = await registry.findServiceById(id);
+    if (!service)
+        throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'` });
+
+    const containers = await dockerService.getContainerList();
+    const match = containers.find((c) => c.containerName === service.container.containerName);
+
+    const runtimeStatus = match?.status ?? "stopped";
+    const status = runtimeStatus === "running" ? "UP"
+                 : !match                      ? "ERROR"
+                 : "DOWN";
+
+    return {
+        ...service,
+        metadata: { ...service.metadata, runtimeStatus, status },
+    };
+}
+
+export async function deleteMicroservice(id: string): Promise<void> {
+    const service = await registry.findServiceById(id);
+    if (!service)
+        throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: `No existe el microservicio con id '${id}'` });
+
+    await dockerService.stopAndRemoveContainer(service.container.containerName);
+    await dockerService.removeImage(service.build.imageName);
+
+    // Elimina la carpeta del microservicio (confirmar)
+    const serviceDir = path.join(process.cwd(), "microservices", id);
+    await fs.rm(serviceDir, { recursive: true, force: true });
+
+    // Elimina del registry
+    await registry.removeService(id);
+}
+// Manejo de estado de los microservicios
+export async function startMicroservice(id: string) {
+    const service = await registry.findServiceById(id);
+    if (!service)
+        throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'` });
+
+    await dockerService.startExistingContainer(service.container.containerName);
+
+    await registry.updateService(id, {
+        metadata: { ...service.metadata, status: "UP", runtimeStatus: "running", updatedAt: new Date().toISOString() },
+    });
+
+    return { id, status: "UP", runtimeStatus: "running" };
+}
+
+export async function stopMicroservice(id: string) {
+    const service = await registry.findServiceById(id);
+    if (!service)
+        throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'` });
+
+    await dockerService.stopExistingContainer(service.container.containerName);
+
+    await registry.updateService(id, {
+        metadata: { ...service.metadata, status: "DOWN", runtimeStatus: "stopped", updatedAt: new Date().toISOString() },
+    });
+
+    return { id, status: "DOWN", runtimeStatus: "stopped" };
+}
+
+export async function restartMicroservice(id: string) {
+    const service = await registry.findServiceById(id);
+    if (!service)
+        throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'` });
+
+    await dockerService.restartExistingContainer(service.container.containerName);
+
+    await registry.updateService(id, {
+        metadata: { ...service.metadata, status: "UP", runtimeStatus: "running", updatedAt: new Date().toISOString() },
+    });
+
+    return { id, status: "UP", runtimeStatus: "running" };
 }

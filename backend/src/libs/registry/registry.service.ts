@@ -46,3 +46,9 @@ export async function getAllServices(): Promise<ServiceRecord[]> {
     const registry = await readRegistry();
     return registry.services;
 }
+
+export async function removeService(id: string): Promise<void> {
+    const registry = await readRegistry();
+    registry.services = registry.services.filter((s) => s.metadata.id !== id);
+    await writeRegistry(registry);
+}

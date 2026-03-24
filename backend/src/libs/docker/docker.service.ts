@@ -4,6 +4,7 @@ import type { ServiceContainerRef } from "@shared/domain.types"
 import * as path from "path";
 import * as fs from "fs/promises";
 import type { ServicesLanguage } from "@shared/domain.types";
+import { HTTPError } from "@modules/app/error.model";
 
 /*
     ==================================
@@ -133,4 +134,86 @@ export async function startContainer(params: {
 
     await container.start();
     return container.id;
+}
+
+// Acciones sobre contenedores
+
+// Para el endpoint de eliminar el microservicio
+export async function stopAndRemoveContainer(containerName: string): Promise<void> {
+    const docker = getDocker();
+
+    try {
+        const container = docker.getContainer(containerName);
+        const info = await container.inspect();
+
+        if (info.State.Running) { // Solo si está corriendo, detiene
+            await container.stop();
+        }
+
+        await container.remove();
+    } catch (err: any) {
+        if (err?.statusCode === 404) return; // Si no existe
+        throw err;
+    }
+}
+
+export async function removeImage(imageName: string): Promise<void> {
+    const docker = getDocker();
+
+    try {
+        const image = docker.getImage(imageName);
+        await image.remove({ force: true });
+    } catch (err: any) {
+        if (err?.statusCode === 404) return;
+        throw err;
+    }
+}
+
+// Para los endpoints de start, stop y restart
+export async function startExistingContainer(containerName: string): Promise<void> {
+    const docker = getDocker();
+    try {
+        const container = docker.getContainer(containerName);
+        const info = await container.inspect();
+
+        if (info.State.Running)
+            throw new HTTPError({ statusCode: 409, type: "CONFLICT", message: "El contenedor ya está corriendo" });
+
+        await container.start();
+    } catch (err: any) {
+        if (err instanceof HTTPError) throw err;
+        if (err?.statusCode === 404)
+            throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: "El contenedor no existe en Docker" });
+        throw err;
+    }
+}
+
+export async function stopExistingContainer(containerName: string): Promise<void> {
+    const docker = getDocker();
+    try {
+        const container = docker.getContainer(containerName);
+        const info = await container.inspect();
+
+        if (!info.State.Running)
+            throw new HTTPError({ statusCode: 409, type: "CONFLICT", message: "El contenedor ya está detenido" });
+
+        await container.stop();
+    } catch (err: any) {
+        if (err instanceof HTTPError) throw err;
+        if (err?.statusCode === 404)
+            throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: "El contenedor no existe en Docker" });
+        throw err;
+    }
+}
+
+export async function restartExistingContainer(containerName: string): Promise<void> {
+    const docker = getDocker();
+    try {
+        const container = docker.getContainer(containerName);
+        await container.restart();
+    } catch (err: any) {
+        if (err?.statusCode === 404)
+            throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: "El contenedor no existe en Docker" });
+        throw err;
+    }
 }

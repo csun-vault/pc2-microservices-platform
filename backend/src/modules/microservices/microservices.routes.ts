@@ -5,29 +5,27 @@ const router = Router();
 
 // Acciones generales
 // 🟩 GET - Listar Microservicios - services/
-//router.get("/", (_req, res) => {res.json({status: "ok"})});
 router.get("/", mc.listServices);
 
 // 🟨 POST - Crear Microservicios - services/
-//router.post("/", (_req, res) => {res.json({status: "ok"})});
 router.post("/", mc.createService);
 
 // 🟩 GET - Info microservicio por ID - services/:id
-router.get("/:id", (_req, res) => {res.json({status: "ok"})});
+router.get("/:id", mc.getServiceById);
 
 
 // Acciones sobre contenedores
 // 🟨 POST - Encender Microservicio - services/:id/start
-router.post("/:id/start", (_req, res) => {res.json({status: "ok"})});
+router.post("/:id/start", mc.startService);
 
 // 🟨 POST - Apagar Microservicio - services/:id/stop
-router.post("/:id/stop", (_req, res) => {res.json({status: "ok"})});
+router.post("/:id/stop", mc.stopService);
 
 // 🟨 POST - Reiniciar Microservicio - services/:id/restart
-router.post("/:id/restart", (_req, res) => {res.json({status: "ok"})});
+router.post("/:id/restart", mc.restartService);
 
 // 🟥 DELETE - Elimina Microservicio - services/:id/delete
-router.delete("/:id/delete", (_req, res) => {res.json({status: "ok"})});
+router.delete("/:id/delete", mc.deleteService);
 
 // 🟩 GET - Mostrar logs Microservicio - services/:id/logs
 router.get("/:id/logs", (_req, res) => {res.json({status: "ok"})});
