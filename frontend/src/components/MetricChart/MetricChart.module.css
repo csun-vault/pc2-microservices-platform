@@ -1,0 +1,140 @@
+/* MetricChart — CSS Module */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+/* ---------- Header ---------------------------------------- */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.headerIcon {
+  width: 15px;
+  height: 15px;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: -apple-system, "SF Pro Rounded", sans-serif;
+  font-weight: 400;
+}
+
+.titleBold {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.moreBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 14px;
+  letter-spacing: 1px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+  line-height: 1;
+}
+.moreBtn:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ---------- Área del chart -------------------------------- */
+/*
+  Layout horizontal:
+  [yAxis 28px fijo] [svgWrapper flex:1]
+
+  Los labels del eje Y son elementos HTML — nunca se deforman
+  al redimensionar porque viven fuera del SVG.
+*/
+.chartArea {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* Columna de labels Y — ancho fijo */
+.yAxis {
+  width: 28px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.yLabel {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.28);
+  font-family: monospace;
+  text-align: right;
+  line-height: 1;
+  /* Cada label se alinea verticalmente con su línea guía */
+  display: block;
+}
+
+/* Wrapper del SVG — ocupa todo el ancho restante */
+.svgWrapper {
+  flex: 1;
+  position: relative;
+  min-width: 0; /* evita overflow en flex */
+}
+
+/*
+  El SVG ocupa el 100% del wrapper.
+  NO usamos height fijo aquí — el padre (.chartArea) tiene
+  height fijo via prop `chartHeight` pasado como style inline.
+  width: 100% + height: 100% hace que el SVG llene exactamente
+  ese espacio sin distorsionarse.
+*/
+.chartSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Valor actual del último punto — flotante sobre el SVG */
+.currentValue {
+  position: absolute;
+  right: 0;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: monospace;
+  opacity: 0.75;
+  transform: translateY(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+  /* top se setea inline desde el componente según posición del último punto */
+}
+
+/* ---------- Skeleton -------------------------------------- */
+.skeleton {
+  width: 100%;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%,  100% { opacity: 0.5; }
+  50%        { opacity: 0.9; }
+}

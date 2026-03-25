@@ -1,0 +1,88 @@
+/* ContainersCard */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerIcon {
+  width: 18px;
+  height: 18px;
+  color: rgba(255,255,255,0.55);
+}
+
+.headerLabel {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  font-family: -apple-system, "SF Pro Rounded", sans-serif;
+  font-weight: 500;
+}
+
+/* Fila central: sub-estados + número grande */
+.body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.subStates {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.subStateRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.subStateIcon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+.iconGreen  { color: #4ade80; }
+.iconYellow { color: #facc15; }
+.iconRed    { color: #f87171; }
+
+.subStateCount {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: monospace;
+  min-width: 14px;
+}
+.countGreen  { color: #4ade80; }
+.countYellow { color: #facc15; }
+.countRed    { color: #f87171; }
+
+.total {
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255,255,255,0.92);
+  font-family: -apple-system, "SF Pro Rounded", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+/* Skeleton */
+.skeletonTotal {
+  width: 60px;
+  height: 64px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  0%,100% { opacity: 0.6; }
+  50%      { opacity: 1;   }
+}
