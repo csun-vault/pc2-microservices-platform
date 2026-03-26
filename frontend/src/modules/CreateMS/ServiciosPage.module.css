@@ -549,7 +549,7 @@
   color: rgba(255, 255, 255, 0.5);
   font-family: -apple-system, "SF Pro Rounded", sans-serif;
   white-space: nowrap;
-  width: 76px;
+  width: auto;
   flex-shrink: 0;
 }
 
