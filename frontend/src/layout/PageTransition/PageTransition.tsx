@@ -7,18 +7,12 @@ interface PageTransitionProps {
 }
 
 /**
- * PageTransition — envuelve el <Outlet /> de AppLayout.
+ * PageTransition — slide horizontal con dirección automática.
  *
- * Detecta si el usuario navega "hacia adelante" o "hacia atrás"
- * en el orden canónico de tabs y aplica el slide correspondiente.
- *
- * Uso en AppLayout:
- *   <PageTransition>
- *     <Outlet />
- *   </PageTransition>
- *
- * La key={pathname} fuerza el re-mount en cada navegación,
- * lo que reinicia la animación CSS automáticamente.
+ * useNavDirection() calcula la dirección sincrónicamente
+ * durante este render, así que cuando React monta el nuevo
+ * div (por el cambio de key), animClass ya tiene el valor
+ * correcto — sin condiciones de carrera.
  */
 export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   const location  = useLocation();
@@ -31,11 +25,6 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
 
   return (
     <div className={styles.wrapper}>
-      {/*
-        key={location.pathname} es la pieza clave:
-        React desmonta y remonta el div en cada cambio de ruta,
-        lo que reinicia la animación CSS desde 0.
-      */}
       <div key={location.pathname} className={`${styles.page} ${animClass}`}>
         {children}
       </div>

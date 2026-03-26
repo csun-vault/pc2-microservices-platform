@@ -1,37 +1,42 @@
 import { useLocation } from "react-router-dom";
-import { useRef, useEffect, useState } from "react";
+import { useRef } from "react";
 
-/*
-  Orden canónico de las tabs.
-  El hook compara el índice de la ruta anterior vs la nueva
-  para determinar si el usuario navega "hacia adelante" o "hacia atrás".
-*/
 const TAB_ORDER = ["/inicio", "/servicios", "/detalles", "/perfil"];
 
 export type NavDirection = "forward" | "backward" | "none";
 
+function getIndex(path: string): number {
+  return TAB_ORDER.findIndex((p) => path === p || path.startsWith(p + "/"));
+}
+
+/**
+ * useNavDirection — cálculo síncrono puro.
+ *
+ * No usa useState ni useEffect.
+ * Calcula la dirección durante el render comparando
+ * el pathname actual con el anterior guardado en un ref.
+ *
+ * Esto garantiza que PageTransition recibe la dirección
+ * correcta en el mismo render en que cambia la ruta,
+ * sin condiciones de carrera ni resets asincrónicos.
+ */
 export function useNavDirection(): NavDirection {
-  const location  = useLocation();
-  const prevPath  = useRef<string>(location.pathname);
-  const [dir, setDir] = useState<NavDirection>("none");
+  const location    = useLocation();
+  const prevPathRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    const prev = prevPath.current;
-    const next = location.pathname;
+  const prev = prevPathRef.current;
+  const next = location.pathname;
 
-    if (prev === next) return;
+  // Actualizamos el ref ANTES de retornar
+  // para que la próxima llamada tenga el valor correcto
+  prevPathRef.current = next;
 
-    const prevIdx = TAB_ORDER.findIndex((p) => next !== p && prev.startsWith(p));
-    const nextIdx = TAB_ORDER.findIndex((p) => next.startsWith(p));
+  if (prev === null || prev === next) return "none";
 
-    if (prevIdx === -1 || nextIdx === -1) {
-      setDir("none");
-    } else {
-      setDir(nextIdx > prevIdx ? "forward" : "backward");
-    }
+  const prevIdx = getIndex(prev);
+  const nextIdx = getIndex(next);
 
-    prevPath.current = next;
-  }, [location.pathname]);
+  if (prevIdx === -1 || nextIdx === -1) return "none";
 
-  return dir;
+  return nextIdx > prevIdx ? "forward" : "backward";
 }
