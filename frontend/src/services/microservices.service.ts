@@ -22,9 +22,13 @@ export interface Microservice {
 }
 
 export interface CreateServicePayload {
-  name: string;
-  port: number;
-  code: string;
+  name:       string;
+  port:       number | null;
+  code:       string;
+  language:   "python" | "node";
+  memLimitMB: number;
+  cpuCores:   number;
+  autoStart:  boolean;
 }
 
 // ---- Config -----------------------------------------------
@@ -108,7 +112,7 @@ export async function deleteService(id: string): Promise<void> {
 /**
  * POST /api/services
  * Crea un nuevo microservicio.
- * Body: { name, port, code }
+ * Body: { name, port, code, language, memLimitMB, cpuCores, autoStart }
  */
 export async function createService(
   payload: CreateServicePayload
@@ -123,12 +127,12 @@ export async function createService(
 
   await delay(800);
   const newService: Microservice = {
-    id: String(Date.now()),
-    name: payload.name,
-    port: payload.port,
-    status: "stopped",
-    cpu: 0,
-    ram: 0,
+    id:     String(Date.now()),
+    name:   payload.name,
+    port:   payload.port ?? 0,  // 0 indica puerto por defecto (asignado por el backend)
+    status: payload.autoStart ? "running" : "stopped",
+    cpu:    0,
+    ram:    0,
   };
   MOCK_SERVICES.push(newService);
   return newService;
