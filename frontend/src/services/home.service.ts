@@ -10,7 +10,8 @@
       de los tipos definidos aquí.
    ============================================================ */
 
-const BASE_URL = "/api"; // ← cambia a tu URL real
+const BASE_URL = import.meta.env.VITE_BASE_URL // ← cambia a tu URL real
+console.log(BASE_URL);
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -21,15 +22,12 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export type DockerStatus = "running" | "stopped" | "error";
 
 export interface DockerEngineInfo {
-  version:  string;
-  status:   DockerStatus;
+  version: string;
+  status: DockerStatus;
+  os?: string;
 }
 
 export interface ContainerSubState {
-  /** Icono a usar del componente Icon */
-  icon:  "on" | "off" | "errorIcon";
-  /** Color del indicador */
-  color: "green" | "yellow" | "red";
   /** Cantidad de contenedores en este estado */
   count: number;
   /** Etiqueta legible */
@@ -37,19 +35,19 @@ export interface ContainerSubState {
 }
 
 export interface ContainersStats {
-  total:      number;
-  subStates:  ContainerSubState[];
+  total: number;
+  subStates: ContainerSubState[];
 }
 
 export interface DockerCounters {
   containers: ContainersStats;
-  images:     number;
-  templates:  number;
+  images: number;
+  templates: number;
 }
 
 export interface MetricPoint {
   /** Timestamp en ms (Date.now()) */
-  ts:    number;
+  ts: number;
   /** Valor porcentual 0–100 */
   value: number;
 }
@@ -92,14 +90,10 @@ function seedHistory() {
    GET /api/docker/engine
    ============================================================ */
 export async function fetchDockerEngine(): Promise<DockerEngineInfo> {
-  // ── Real ──────────────────────────────────────────────────
-  // const res = await fetch(`${BASE_URL}/docker/engine`);
-  // if (!res.ok) throw new Error("Error fetching docker engine");
-  // return res.json(); // { version: string, status: DockerStatus }
-
-  // ── Mock ──────────────────────────────────────────────────
-  await delay(400);
-  return { version: "24.0.7", status: "running" };
+  const res = await fetch(`${BASE_URL}/docker/version`);
+  if (!res.ok) throw new Error("Error fetching docker engine");
+  const json = await res.json();
+  return json.data.engine;
 }
 
 /* ============================================================
@@ -107,25 +101,10 @@ export async function fetchDockerEngine(): Promise<DockerEngineInfo> {
    GET /api/docker/stats
    ============================================================ */
 export async function fetchDockerCounters(): Promise<DockerCounters> {
-  // ── Real ──────────────────────────────────────────────────
-  // const res = await fetch(`${BASE_URL}/docker/stats`);
-  // if (!res.ok) throw new Error("Error fetching docker counters");
-  // return res.json();
-
-  // ── Mock ──────────────────────────────────────────────────
-  await delay(500);
-  return {
-    containers: {
-      total: 6,
-      subStates: [
-        { icon: "on",        color: "green",  count: 3, label: "Running" },
-        { icon: "off",       color: "yellow", count: 2, label: "Stopped" },
-        { icon: "errorIcon", color: "red",    count: 1, label: "Error"   },
-      ],
-    },
-    images:    6,
-    templates: 2,
-  };
+  const res = await fetch(`${BASE_URL}/docker/summary`);
+  if (!res.ok) throw new Error("Error fetching docker counters");
+  const json = await res.json();
+  return json.data.summary;
 }
 
 /* ============================================================

@@ -26,14 +26,14 @@ export async function appendService(record: ServiceRecord): Promise<void> {
     await writeRegistry(registry);
 }
 
-export async function updateService(
-    id: string,
-    patch: Partial<ServiceRecord>
-): Promise<void> {
+export async function updateService( id: string, patch: Partial<ServiceRecord> ): Promise<void> {
     const registry = await readRegistry();
     const index = registry.services.findIndex((s) => s.metadata.id === id);
+
     if (index === -1) return;
+
     registry.services[index] = {...registry.services[index], ...patch} as ServiceRecord;
+    
     await writeRegistry(registry);
 }
 
@@ -41,6 +41,7 @@ export async function findServiceById(id: string): Promise<ServiceRecord | null>
     const registry = await readRegistry();
     return registry.services.find((s) => s.metadata.id === id) ?? null;
 }
+
 // Para obtener listado de los microservicios
 export async function getAllServices(): Promise<ServiceRecord[]> {
     const registry = await readRegistry();

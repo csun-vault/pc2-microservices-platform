@@ -1,10 +1,11 @@
 import { getDocker } from "./docker.client";
 import type { ServiceContainerRef } from "@shared/domain.types"
 
-import * as path from "path";
-import * as fs from "fs/promises";
+import * as df from "./docker.files"
 import type { ServicesLanguage } from "@shared/domain.types";
-import { HTTPError } from "@modules/app/error.model";
+import { isPortAllocatedError } from "./docker.helper";
+import { get } from "http";
+
 
 /*
     ==================================
@@ -20,86 +21,18 @@ export async function getDockerVersion() {
         version: version.Version,
         os: version.Os
     };
-
 }
-
-
-/*
-    ==================================
-            SOBRE CONTENEDORES 
-    ==================================
-*/
-//  ( docker ps -a ) Listar todos los contenedores
-export async function getContainerList () {
-    const docker = getDocker();
-
-    const containers = await docker.listContainers({ all: true });
-    
-    const containerRefs : ServiceContainerRef[] = containers.map((container) => ({
-        status: 
-            container.Status.startsWith("Up") ? "running" 
-            : container.Status.startsWith("Exited") ? "stopped" 
-            : "restarting",
-        
-        containerId: container.Id,
-        containerName: container.Names?.[0]?.replace(/^\//, "") ?? "",
-        image: {
-            id : container.ImageID,
-            name: container.Image
-        }
-    })); 
-    
-    return containerRefs
-}
-
-const DOCKERFILES: Record<ServicesLanguage, (port: number) => string> = {
-    node: (port) => `
-FROM node:20-alpine
-WORKDIR /app
-COPY index.js .
-EXPOSE ${port}
-CMD ["node", "index.js"]
-`.trim(),
-
-    python: (port) => `
-FROM python:3.11-slim
-WORKDIR /app
-COPY main.py .
-EXPOSE ${port}
-CMD ["python", "main.py"]
-`.trim(),
-};
-
-// Nombre del archivo según el lenguaje
-export const SOURCE_FILENAME: Record<ServicesLanguage, string> = {
-    node   : "index.js",
-    python : "main.py",
-};
 
 //  Probando construir la imagen Docker desde el sourceCode en memoria
-export async function buildImageFromSource(params: {
-    serviceId  : string;
-    language   : ServicesLanguage;
-    sourceCode : string;
-    port       : number;
-    imageName  : string;
-}): Promise<void> {
+export async function buildImageFromSource(params: { serviceId: string; language: ServicesLanguage; sourceCode: string; port: number; imageName: string; }): Promise<void> {
     const docker = getDocker();
-    const { serviceId, language, sourceCode, port, imageName } = params;
+    const { imageName } = params;
 
-    // Directorio temporal para el build
-    const buildDir = path.join("/tmp", `ms-build-${serviceId}`);
-    await fs.mkdir(buildDir, { recursive: true });
+    const { buildDir, src } = await df.createBuildContext(params);
 
-    // Ambos Dockerfile y sourceCode en el directorio temporal y se construye la img
-    await fs.writeFile(path.join(buildDir, "Dockerfile"), DOCKERFILES[language](port), "utf-8");
-    await fs.writeFile(path.join(buildDir, SOURCE_FILENAME[language]), sourceCode, "utf-8");
-    
-    const stream = await docker.buildImage(
-        { context: buildDir, src: ["Dockerfile", SOURCE_FILENAME[language]] },
-        { t: imageName }
-    );
+    const stream = await docker.buildImage({ context: buildDir, src }, { t: imageName });
 
+    // Espera aquí hasta que Docker termine de construir la imagen. Si falla, lanza error
     await new Promise<void>((resolve, reject) => {
         docker.modem.followProgress(stream, (err) => {
             if (err) reject(err);
@@ -108,112 +41,191 @@ export async function buildImageFromSource(params: {
     });
 
     // Limpiar archivos temporales
-    await fs.rm(buildDir, { recursive: true, force: true });
+    await df.removeBuildContext(buildDir);
 }
 
+/*
+    ==================================
+            SOBRE CONTENEDORES 
+    ==================================
+*/
+//  ( docker info containerName ) Tomar la info de un contenedor
+async function getContainerInfo(containerName: string) {
+    const docker = getDocker();
+    const container = docker.getContainer(containerName);
+    const info = await container.inspect();
 
-export async function startContainer(params: {
-    imageName     : string;
-    containerName : string;
-    internalPort  : number;
-    externalPort  : number;
-}): Promise<string> {
+    return { container, info };
+}
+
+//  ( docker ps -a ) Listar todos los contenedores
+export async function getContainerList() {
+    const docker = getDocker();
+
+    const containers = await docker.listContainers({ all: true });
+
+    const containerRefs: ServiceContainerRef[] = containers.map((container) => ({
+        status:
+            container.Status.startsWith("Up") ? "running"
+                : container.Status.startsWith("Exited") ? "stopped"
+                    : "restarting",
+
+        containerId: container.Id,
+        containerName: container.Names?.[0]?.replace(/^\//, "") ?? "",
+        image: {
+            id: container.ImageID,
+            name: container.Image
+        }
+    }));
+
+    return containerRefs
+}
+
+export async function getDockerSummary() {
+    const containers = await getContainerList();
+
+    const summary = containers.reduce(
+        (acc, cc) => {
+            if (cc.status === "running") {
+                acc.running++;
+            } else if (cc.status === "stopped") {
+                acc.stopped++;
+            } else {
+                acc.error++;
+            }
+
+            if (cc.image?.name) {
+                acc.imageSet.add(cc.image.name);
+            }
+
+            return acc;
+        },
+
+        {
+            running: 0,
+            stopped: 0,
+            error: 0,
+            imageSet: new Set<string>()
+        }
+    );
+
+    return {
+        containers: {
+
+            total: containers.length,
+            subStates: [
+                { label: "Running", count: summary.running },
+                { label: "Stopped", count: summary.stopped },
+                { label: "Error", count: summary.error },
+            ],
+        },
+
+        images: summary.imageSet.size,
+        templates: summary.imageSet.size
+    };
+}
+
+//  ( docker run/start containerName ) Start un contenedor
+export async function createAndStartContainer(params: { imageName: string; containerName: string; internalPort: number; externalPort: number; }): Promise<string> {
     const docker = getDocker();
     const { imageName, containerName, internalPort, externalPort } = params;
 
-    const container = await docker.createContainer({
-        Image      : imageName,
-        name       : containerName,
-        ExposedPorts: { [`${internalPort}/tcp`]: {} },
-        HostConfig : {
-            PortBindings: {
-                [`${internalPort}/tcp`]: [{ HostPort: String(externalPort) }],
-            },
-        },
+    let container = docker.getContainer(containerName);
+
+    const info = await container.inspect().catch((err: any) => {
+        if (err?.statusCode === 404) return null;
+        throw err;
     });
 
-    await container.start();
+    if (!info) {
+        container = await docker.createContainer({
+            Image: imageName,
+            name: containerName,
+            ExposedPorts: {
+                [`${internalPort}/tcp`]: {},
+            },
+            HostConfig: {
+                PortBindings: {
+                    [`${internalPort}/tcp`]: [{ HostPort: String(externalPort) }],
+                },
+            },
+        });
+
+        try {
+            await container.start();
+        } catch (err) {
+            if (isPortAllocatedError(err))
+                throw new Error(`PORT_ALREADY_ALLOCATED:${externalPort}`);
+        }
+
+        return container.id;
+    }
+
+    if (!info.State.Running) {
+        try {
+            await container.start();
+        } catch (err) {
+            if (isPortAllocatedError(err))
+                throw new Error(`PORT_ALREADY_ALLOCATED:${externalPort}`);
+        }
+    }
+
     return container.id;
 }
 
-// Acciones sobre contenedores
-
-// Para el endpoint de eliminar el microservicio
+//  ( docker remove containerName ) Apagar y borrar contenedor por nombre
 export async function stopAndRemoveContainer(containerName: string): Promise<void> {
-    const docker = getDocker();
+    const { container, info } = await getContainerInfo(containerName);
 
-    try {
-        const container = docker.getContainer(containerName);
-        const info = await container.inspect();
+    // Si no hay información, retornar nada
+    if (!info) return;
 
-        if (info.State.Running) { // Solo si está corriendo, detiene
-            await container.stop();
-        }
-
-        await container.remove();
-    } catch (err: any) {
-        if (err?.statusCode === 404) return; // Si no existe
-        throw err;
+    // Solo si está corriendo apagar
+    if (info.State.Running) {
+        await container.stop();
     }
+
+    // Borrar al final
+    await container.remove();
 }
 
+// 
 export async function removeImage(imageName: string): Promise<void> {
     const docker = getDocker();
+    const image = docker.getImage(imageName);
 
-    try {
-        const image = docker.getImage(imageName);
-        await image.remove({ force: true });
-    } catch (err: any) {
+    await image.remove({ force: true }).catch((err: any) => {
         if (err?.statusCode === 404) return;
         throw err;
-    }
+    });
 }
 
 // Para los endpoints de start, stop y restart
-export async function startExistingContainer(containerName: string): Promise<void> {
-    const docker = getDocker();
-    try {
-        const container = docker.getContainer(containerName);
-        const info = await container.inspect();
+export async function startExistingContainer(containerName: string): Promise<"started" | "already_running" | "not_found"> {
+    const { container, info } = await getContainerInfo(containerName);
 
-        if (info.State.Running)
-            throw new HTTPError({ statusCode: 409, type: "CONFLICT", message: "El contenedor ya está corriendo" });
+    if (!info) return "not_found";
+    if (info.State.Running) return "already_running";
 
-        await container.start();
-    } catch (err: any) {
-        if (err instanceof HTTPError) throw err;
-        if (err?.statusCode === 404)
-            throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: "El contenedor no existe en Docker" });
-        throw err;
-    }
+    await container.start();
+    return "started";
 }
 
-export async function stopExistingContainer(containerName: string): Promise<void> {
-    const docker = getDocker();
-    try {
-        const container = docker.getContainer(containerName);
-        const info = await container.inspect();
+export async function stopExistingContainer(containerName: string): Promise<string> {
+    const { container, info } = await getContainerInfo(containerName);
 
-        if (!info.State.Running)
-            throw new HTTPError({ statusCode: 409, type: "CONFLICT", message: "El contenedor ya está detenido" });
+    if (!info) return "not_found";
+    if (!info.State.Running) return "already_stopped";
 
-        await container.stop();
-    } catch (err: any) {
-        if (err instanceof HTTPError) throw err;
-        if (err?.statusCode === 404)
-            throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: "El contenedor no existe en Docker" });
-        throw err;
-    }
+    await container.stop();
+    return "stopped";
 }
 
-export async function restartExistingContainer(containerName: string): Promise<void> {
-    const docker = getDocker();
-    try {
-        const container = docker.getContainer(containerName);
-        await container.restart();
-    } catch (err: any) {
-        if (err?.statusCode === 404)
-            throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: "El contenedor no existe en Docker" });
-        throw err;
-    }
+export async function restartExistingContainer(containerName: string): Promise<string> {
+    const { container, info } = await getContainerInfo(containerName);
+
+    if (!info) return 'not_found';
+
+    await container.restart();
+    return container.id;
 }

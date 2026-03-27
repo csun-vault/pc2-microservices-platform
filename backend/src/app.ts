@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended:true }))
 // Inicializar rutas
 app.use("/health", healthRoutes)
 app.use("/services", dockerGuard, microservicesRoutes)
-app.use("/docker", dockerRoutes)
+app.use("/docker", dockerGuard, dockerRoutes)
 
 // Error Handler
 app.use(errorHandlerMiddleware);

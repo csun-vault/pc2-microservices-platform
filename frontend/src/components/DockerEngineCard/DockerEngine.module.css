@@ -114,6 +114,25 @@
   margin-top: 4px;
 }
 
+.refreshButton {
+  all: unset;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  width: 2rem;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+  transition: transform 100ms ease-in ;
+  cursor: pointer;
+}
+
+.refreshButton:hover {
+  transform: scale(1.1);
+}
+
 @keyframes shimmer {
   0%, 100% {
     opacity: 0.6;

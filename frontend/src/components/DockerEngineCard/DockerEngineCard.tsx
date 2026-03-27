@@ -12,32 +12,40 @@ import styles from "./DockerEngine.module.css";
 const DOT_CLASS: Record<DockerStatus, string> = {
   running: styles.dotRunning,
   stopped: styles.dotStopped,
-  error:   styles.dotError,
+  error: styles.dotError,
 };
 const LABEL_CLASS: Record<DockerStatus, string> = {
   running: styles.labelRunning,
   stopped: styles.labelStopped,
-  error:   styles.labelError,
+  error: styles.labelError,
 };
 const LABEL_TEXT: Record<DockerStatus, string> = {
   running: "Running",
   stopped: "Stopped",
-  error:   "Error",
+  error: "Error",
 };
 
 /* ============================================================
    DockerEngineCard
    ============================================================ */
 export const DockerEngineCard: React.FC = () => {
-  const [data,    setData]    = useState<DockerEngineInfo | null>(null);
+  const [data, setData] = useState<DockerEngineInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(false);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function fetchDocker() {
+    setLoading(true);
+    setError(false);
+    setData(null);
+
     fetchDockerEngine()
       .then(setData)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    fetchDocker();
   }, []);
 
   return (
@@ -49,9 +57,7 @@ export const DockerEngineCard: React.FC = () => {
       <div className={styles.card}>
 
         {/* Dot de estado */}
-        {!loading && data && (
-          <span className={`${styles.statusDot} ${DOT_CLASS[data.status]}`} />
-        )}
+        <span className={`${styles.statusDot} ${DOT_CLASS[data?.status || "stopped"]}`} />
 
         {/* Icono Docker */}
         <Icon name="docker" className={styles.dockerIcon} />
@@ -64,25 +70,27 @@ export const DockerEngineCard: React.FC = () => {
               <div className={styles.skeletonVersion} />
             </>
           ) : error ? (
-            <span className={styles.name} style={{ color: "#f87171" }}>
-              No disponible
-            </span>
+            <>
+              <span className={styles.name} style={{ color: "#f87171" }}>No disponible</span>
+              <span className={styles.version}>Daemon no encontrado</span>
+            </>
           ) : data ? (
             <>
               <span className={styles.name}>Docker Engine</span>
-              <span className={styles.version}>Ver. {data.version}</span>
+              <span className={styles.version}>Ver. {data.version} - {data.os}</span>
             </>
           ) : null}
+
         </div>
 
         {/* Label de estado */}
-        {!loading && data && (
-          <span className={`${styles.statusLabel} ${LABEL_CLASS[data.status]}`}>
-            {LABEL_TEXT[data.status]}
+          <span className={`${styles.statusLabel} ${LABEL_CLASS[data? data.status : "stopped"]}`}>
+            { data ? LABEL_TEXT[data.status] : "Stopped"}
           </span>
-        )}
 
+        <button className={`${styles.refreshButton}`} onClick={fetchDocker}>⟳</button>
       </div>
+
     </BaseCard>
   );
 };

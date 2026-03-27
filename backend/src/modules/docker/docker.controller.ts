@@ -13,3 +13,8 @@ export const listAllContainers : Controller = async (req, res) => {
     const containers = await ds.getContainerList();
     return res.json({ ok: true, data: { containers } })
 }
+
+export const getSummary : Controller = async (req, res) => {
+    const summary = await ds.getDockerSummary();
+    return res.json({ok: true, data: {summary}})
+}

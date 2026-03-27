@@ -26,10 +26,7 @@ interface ContainersCardProps {
    Bloque grande que muestra el total de contenedores
    y sus sub-estados (running / stopped / error).
    ============================================================ */
-export const ContainersCard: React.FC<ContainersCardProps> = ({
-  data,
-  loading = false,
-}) => {
+export const ContainersCard: React.FC<ContainersCardProps> = ({ data, loading = false }) => {
   return (
     <BaseCard variant="normal" padding="none" radius="xl" tilt tiltMax={1}>
       <div className={styles.card}>
@@ -62,10 +59,10 @@ export const ContainersCard: React.FC<ContainersCardProps> = ({
               data.subStates.map((s) => (
                 <div key={s.label} className={styles.subStateRow}>
                   <Icon
-                    name={s.icon}
-                    className={`${styles.subStateIcon} ${ICON_CLASS[s.color]}`}
+                    name={s.label === "Running" ? "on" : s.label === "Stopped" ? "off" : "errorIcon"}
+                    className={`${styles.subStateIcon} ${ICON_CLASS[s.label === "Running" ? "green" : s.label === "Stopped" ? "yellow" : "red"]}`}
                   />
-                  <span className={`${styles.subStateCount} ${COUNT_CLASS[s.color]}`}>
+                  <span className={`${styles.subStateCount} ${COUNT_CLASS[s.label === "Running" ? "green" : s.label === "Stopped" ? "yellow" : "red"]}`}>
                     {s.count}
                   </span>
                 </div>

@@ -9,6 +9,9 @@ const router = Router();
 router.get("/version", dc.getDaemonVersion );
 
 // 🟩 GET - Listar Contenedores - docker/containers
-router.get("/containers/", dockerGuard, dc.listAllContainers);
+router.get("/containers", dockerGuard, dc.listAllContainers);
+
+// 🟩 GET - Listar informacion de la UI - docker/summary
+router.get("/summary", dockerGuard, dc.getSummary);
 
 export const dockerRoutes = router;

@@ -25,7 +25,7 @@ export function errorHandlerMiddleware(err: any, req: Request, res: Response, _n
     }
 
     // Procedencia desconocida
-    console.error(`Unhandled: ${err?.name ?? "Error"}: ${err?.message ?? String(err)}`);
+    console.error(`Unhandled: ${err?.name ?? "Error"}: ${err?.message ?? String(err)}, ${err}`);
 
     return res.status(500).json({
         ok            : false,

@@ -36,6 +36,8 @@ const InicioPage: React.FC = () => {
       .then(setCounters)
       .catch(console.error)
       .finally(() => setCountersLoading(false));
+
+      console.log(counters)
   }, []);
 
   /* ---- Historial inicial de métricas -------------------- */
