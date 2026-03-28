@@ -32,8 +32,8 @@ export type BuildMetadata = {
 }
 
 export type ServiceContainerRef = {
-    status: string;
-    containerId?: string;
+    status: RuntimeStatus;
+    containerId: string;
     containerName: string;
     image: {
         id : string,
@@ -64,3 +64,22 @@ export type ServiceRecord = {
 }
 
 // ====================================================
+
+export type ContainerMetricUsage = {
+  containerId: string;
+  containerName: string;
+  cpu: number;
+  ram: number;
+  ts: number;
+  status: RuntimeStatus;
+}
+
+export type ContainersMetricsResponse = {
+  scope: "single" | "many" | "all";
+  items: ContainerMetricUsage[];
+  summary: {
+    cpuAvg: number;
+    ramAvg: number;
+    containers: number;
+  };
+}

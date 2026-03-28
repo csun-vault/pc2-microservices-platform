@@ -5,13 +5,15 @@ import type { MetricPoint } from "../../services/home.service";
 import styles from "./MetricChart.module.css";
 
 interface MetricChartProps {
-  label:        string;
-  color:        string;
+  label: string;
+  color: string;
   initialData?: MetricPoint[];
-  fetchPoint?:  () => Promise<MetricPoint>;
-  pollingMs?:   number;
+  fetchPoint?: () => Promise<MetricPoint>;
+  pollingMs?: number;
   chartHeight?: number;
-  maxPoints?:   number;
+  maxPoints?: number;
+  yMax?: number;
+  yTicks?: number[];
 }
 
 /* ============================================================
@@ -35,13 +37,15 @@ function buildSmoothPath(pts: { x: number; y: number }[], tension = 0.3): string
 export const MetricChart: React.FC<MetricChartProps> = ({
   label,
   color,
-  initialData  = [],
+  initialData = [],
   fetchPoint,
-  pollingMs    = 5000,
-  chartHeight  = 110,
-  maxPoints    = 30,
+  pollingMs = 5000,
+  chartHeight = 110,
+  maxPoints = 30,
+  yMax = 100,
+  yTicks,
 }) => {
-  const [points,  setPoints]  = useState<MetricPoint[]>(initialData);
+  const [points, setPoints] = useState<MetricPoint[]>(initialData);
   const [loading, setLoading] = useState(initialData.length === 0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -52,7 +56,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     en el SVG — si comparten el mismo id="grad", el segundo
     sobreescribe el primero y ambos usan el mismo color.
   */
-  const uid    = useId().replace(/:/g, "");
+  const uid = useId().replace(/:/g, "");
   const gradId = `mgGrad_${uid}`;
 
   /* ---- Polling ------------------------------------------- */
@@ -87,27 +91,27 @@ export const MetricChart: React.FC<MetricChartProps> = ({
      El texto (labels del eje Y) vive FUERA del SVG en HTML
      para que no se deforme al redimensionar.
   ---------------------------------------- */
-  const VW       = 600;
-  const VH       = 100;
-  const PAD_TOP  = 6;
-  const PAD_BOT  = 6;
-  const PAD_L    = 4;   // sin padding izquierdo — los labels van en HTML
-  const PAD_R    = 4;
-  const plotW    = VW - PAD_L - PAD_R;
-  const plotH    = VH - PAD_TOP - PAD_BOT;
+  const VW = 600;
+  const VH = 100;
+  const PAD_TOP = 6;
+  const PAD_BOT = 6;
+  const PAD_L = 4;   // sin padding izquierdo — los labels van en HTML
+  const PAD_R = 4;
+  const plotW = VW - PAD_L - PAD_R;
+  const plotH = VH - PAD_TOP - PAD_BOT;
 
   const toSvg = (pt: MetricPoint, i: number, total: number) => ({
     x: PAD_L + (i / Math.max(total - 1, 1)) * plotW,
-    y: PAD_TOP + plotH - (Math.min(100, Math.max(0, pt.value)) / 100) * plotH,
+    y: PAD_TOP + plotH - (Math.min(yMax, Math.max(0, pt.value)) / yMax) * plotH,
   });
 
-  const svgPts   = points.map((p, i) => toSvg(p, i, points.length));
+  const svgPts = points.map((p, i) => toSvg(p, i, points.length));
   const linePath = buildSmoothPath(svgPts);
   const areaPath = svgPts.length >= 2
     ? `${linePath} L ${svgPts[svgPts.length - 1].x} ${PAD_TOP + plotH} L ${svgPts[0].x} ${PAD_TOP + plotH} Z`
     : "";
 
-  const lastPt     = svgPts[svgPts.length - 1];
+  const lastPt = svgPts[svgPts.length - 1];
   const currentVal = points[points.length - 1]?.value ?? 0;
 
   // Posición Y del label del valor actual — mapeada al alto del contenedor
@@ -115,6 +119,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     ? ((lastPt.y / VH) * 100).toFixed(1)
     : "50";
 
+  const ticks = yTicks ?? [yMax, yMax * 0.75, yMax * 0.5, yMax * 0.25, 0];
   /* ---- Render -------------------------------------------- */
   return (
     <BaseCard variant="normal" padding="none" radius="xl">
@@ -139,7 +144,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 
             {/* Labels eje Y — HTML puro, nunca se deforman */}
             <div className={styles.yAxis}>
-              {[40, 30, 20, 10, 0].map((v) => (
+              {ticks.map((v) => (
                 <span key={v} className={styles.yLabel}>
                   {v}%
                 </span>
@@ -172,14 +177,14 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               >
                 <defs>
                   <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor={color} stopOpacity="0.55" />
-                    <stop offset="100%" stopColor={color} stopOpacity="0"    />
+                    <stop offset="0%" stopColor={color} stopOpacity="0.55" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0" />
                   </linearGradient>
                 </defs>
 
                 {/* Líneas guía horizontales — solo líneas, sin texto */}
-                {[40, 30, 20, 10, 0].map((v) => {
-                  const y = PAD_TOP + plotH - (v / 100) * plotH;
+                {ticks.map((v) => {
+                  const y = PAD_TOP + plotH - (v / yMax) * plotH;
                   return (
                     <line
                       key={v}

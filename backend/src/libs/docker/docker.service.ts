@@ -1,10 +1,11 @@
 import { getDocker } from "./docker.client";
-import type { ServiceContainerRef } from "@shared/domain.types"
+import type { ServiceContainerRef, ContainerMetricUsage, ContainersMetricsResponse, RuntimeStatus } from "@shared/domain.types"
 
 import * as df from "./docker.files"
 import type { ServicesLanguage } from "@shared/domain.types";
-import { isPortAllocatedError } from "./docker.helper";
+import { calculateCpuPercent, calculateRAMPercent, isPortAllocatedError } from "./docker.helper";
 import { get } from "http";
+import { StatsQuery } from "@modules/docker/docker.schema";
 
 
 /*
@@ -56,6 +57,78 @@ async function getContainerInfo(containerName: string) {
     const info = await container.inspect();
 
     return { container, info };
+}
+
+async function getOneContainerMetrics(containerRef: { containerId: string; containerName: string; status?: RuntimeStatus }): Promise<ContainerMetricUsage | null> {
+    const docker = getDocker();
+    const container = docker.getContainer(containerRef.containerId);
+    try {
+        const stats = await container.stats({ stream: false });
+
+        return {
+            containerId: containerRef.containerId,
+            containerName: containerRef.containerName,
+            status: containerRef.status || "stopped",
+            cpu: Number(calculateCpuPercent(stats).toFixed(1)),
+            ram: Number(calculateRAMPercent(stats).toFixed(1)),
+            ts: Date.now(),
+        };
+    } catch (error) {
+
+        return {
+            containerId: containerRef.containerId,
+            containerName: containerRef.containerName,
+            status: containerRef.status || "stopped",
+            cpu: 0,
+            ram: 0,
+            ts: Date.now(),
+        };
+    }
+}
+
+export async function getContainersMetricsSnapshot({containerName, containerNames, onlyRunning}:StatsQuery): Promise<ContainersMetricsResponse> {
+    const allContainers = await getContainerList();
+
+    let selected = allContainers;
+
+    if (onlyRunning) {
+        selected = selected.filter((c) => c.status === "running");
+    }
+
+    if (containerName) {
+        selected = selected.filter((c) => c.containerName === containerName);
+
+    } else if (containerNames?.length) {
+        const namesSet = new Set(containerNames);
+        selected = selected.filter((c) => namesSet.has(c.containerName));
+    }
+
+    const itemsRaw = await Promise.all(
+        selected.map((container) =>
+            getOneContainerMetrics({
+                containerId: container.containerId,
+                containerName: container.containerName,
+                status: container.status,
+            })
+        )
+    );
+
+    const items = itemsRaw.filter((x): x is ContainerMetricUsage => x !== null);
+
+    const cpuAvg = items.length > 0 ? Number((items.reduce((acc, item) => acc + item.cpu, 0) / items.length).toFixed(1)) : 0;
+    const ramAvg = items.length > 0 ? Number((items.reduce((acc, item) => acc + item.ram, 0) / items.length).toFixed(1)) : 0;
+
+    const scope: "single" | "many" | "all" = containerName ? "single" : containerNames?.length ? "many" : "all";
+
+    return {
+        scope,
+        items,
+        summary: {
+            cpuAvg,
+            ramAvg,
+            containers: items.length,
+        },
+    };
 }
 
 //  ( docker ps -a ) Listar todos los contenedores

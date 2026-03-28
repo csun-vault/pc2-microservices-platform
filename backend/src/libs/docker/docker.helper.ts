@@ -7,3 +7,36 @@ export function isPortAllocatedError(err: unknown): boolean {
         message.includes("Bind for 0.0.0.0")
     );
 }
+
+export function calculateCpuPercent(stats: any): number {
+  const cpuDelta =
+    (stats.cpu_stats?.cpu_usage?.total_usage ?? 0) -
+    (stats.precpu_stats?.cpu_usage?.total_usage ?? 0);
+
+  const systemDelta =
+    (stats.cpu_stats?.system_cpu_usage ?? 0) -
+    (stats.precpu_stats?.system_cpu_usage ?? 0);
+
+  const onlineCpus =
+    stats.cpu_stats?.online_cpus ||
+    stats.cpu_stats?.cpu_usage?.percpu_usage?.length ||
+    1;
+
+  if (cpuDelta <= 0 || systemDelta <= 0) return 0;
+
+  return (cpuDelta / systemDelta) * onlineCpus * 100;
+}
+
+export function calculateRAMPercent(stats: any): number {
+  const usage = stats.memory_stats?.usage ?? 0;
+  const limit = stats.memory_stats?.limit ?? 1;
+
+  const cache =
+    stats.memory_stats?.stats?.total_inactive_file ??
+    stats.memory_stats?.stats?.cache ??
+    0;
+
+  const used = Math.max(usage - cache, 0);
+
+  return (used / limit) * 100;
+}

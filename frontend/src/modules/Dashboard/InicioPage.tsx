@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { Icon } from "../../components/Icons";
-import { DockerEngineCard }  from "../../components/DockerEngineCard/DockerEngineCard";
-import { ContainersCard }    from "../../components/ContainersCard/ContainersCard";
-import { StatCounterCard }   from "../../components/StatCounterCard/StatCounterCard";
-import { MetricChart }       from "../../components/MetricChart/MetricChart";
+import { DockerEngineCard } from "../../components/DockerEngineCard/DockerEngineCard";
+import { ContainersCard } from "../../components/ContainersCard/ContainersCard";
+import { StatCounterCard } from "../../components/StatCounterCard/StatCounterCard";
+import { MetricChart } from "../../components/MetricChart/MetricChart";
 import {
   fetchDockerCounters,
   fetchMetricsHistory,
@@ -28,7 +28,7 @@ import styles from "./InicioPage.module.css";
 const InicioPage: React.FC = () => {
 
   /* ---- Contadores Docker --------------------------------- */
-  const [counters,        setCounters]        = useState<DockerCounters | null>(null);
+  const [counters, setCounters] = useState<DockerCounters | null>(null);
   const [countersLoading, setCountersLoading] = useState(true);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const InicioPage: React.FC = () => {
       .catch(console.error)
       .finally(() => setCountersLoading(false));
 
-      console.log(counters)
+    console.log(counters)
   }, []);
 
   /* ---- Historial inicial de métricas -------------------- */
@@ -53,16 +53,29 @@ const InicioPage: React.FC = () => {
       .catch(console.error);
   }, []);
 
-  /* ---- fetchPoint para polling de CPU ------------------- */
-  const fetchCpuPoint = useCallback(async (): Promise<MetricPoint> => {
-    const snap = await fetchMetricsSnapshot();
-    return snap.cpu;
-  }, []);
+  /* ---- fetchPoint para polling de CPU y RAM ------------------- */
+  useEffect(() => {
+    const loadSnapshot = async () => {
+      try {
+        const snap = await fetchMetricsSnapshot({ onlyRunning: true });
 
-  /* ---- fetchPoint para polling de RAM ------------------- */
-  const fetchRamPoint = useCallback(async (): Promise<MetricPoint> => {
-    const snap = await fetchMetricsSnapshot();
-    return snap.ram;
+        setCpuHistory((prev) => {
+          const next = [...prev, snap.cpu];
+          return next.length > 30 ? next.slice(-30) : next;
+        });
+
+        setRamHistory((prev) => {
+          const next = [...prev, snap.ram];
+          return next.length > 30 ? next.slice(-30) : next;
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    const id = setInterval(loadSnapshot, 5000);
+
+    return () => clearInterval(id);
   }, []);
 
   /* ---- Render -------------------------------------------- */
@@ -128,10 +141,11 @@ const InicioPage: React.FC = () => {
           label="CPU"
           color="#4ade80"
           initialData={cpuHistory}
-          fetchPoint={fetchCpuPoint}
           pollingMs={5000}
           chartHeight={110}
           maxPoints={30}
+          yMax={10}
+          yTicks={[10, 5, 0]}
         />
       </section>
 
@@ -141,10 +155,11 @@ const InicioPage: React.FC = () => {
           label="RAM"
           color="#f9a8d4"
           initialData={ramHistory}
-          fetchPoint={fetchRamPoint}
           pollingMs={5000}
           chartHeight={110}
           maxPoints={30}
+          yMax={5}
+          yTicks={[5, 2, 0]}
         />
       </section>
 

@@ -43,13 +43,13 @@
         "displayName": "hello-node777",
         "description": "",
         "language": "node",
-        "status": "BUILDING",
-        "runtimeStatus": "stopped",
+        "status": "UP",
+        "runtimeStatus": "running",
         "createdAt": "2026-03-27T17:17:32.163Z",
-        "updatedAt": "2026-03-27T17:17:32.163Z"
+        "updatedAt": "2026-03-28T19:53:35.222Z"
       },
       "container": {
-        "status": "stopped",
+        "status": "running",
         "containerName": "ms-hello-node777",
         "image": {
           "id": "",

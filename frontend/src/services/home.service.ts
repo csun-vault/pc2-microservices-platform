@@ -111,26 +111,37 @@ export async function fetchDockerCounters(): Promise<DockerCounters> {
    API — Snapshot de métricas (un punto nuevo)
    GET /api/metrics/snapshot
    ============================================================ */
-export async function fetchMetricsSnapshot(): Promise<MetricsSnapshot> {
-  // ── Real ──────────────────────────────────────────────────
-  // const res = await fetch(`${BASE_URL}/metrics/snapshot`);
-  // if (!res.ok) throw new Error("Error fetching metrics");
-  // const data = await res.json(); // { cpu: number, ram: number }
-  // return {
-  //   cpu: { ts: Date.now(), value: data.cpu },
-  //   ram: { ts: Date.now(), value: data.ram },
-  // };
+export async function fetchMetricsSnapshot(params?:{containerName?: string; containerNames?: string[]; onlyRunning?: boolean }): Promise<MetricsSnapshot> {
+  const query = new URLSearchParams();
 
-  // ── Mock ──────────────────────────────────────────────────
-  seedHistory();
-  await delay(200);
-  const lastCpu = _cpuHistory[_cpuHistory.length - 1]?.value ?? 25;
-  const lastRam = _ramHistory[_ramHistory.length - 1]?.value ?? 28;
-  const cpu = generatePoint(lastCpu, 6);
-  const ram = generatePoint(lastRam, 5);
-  _cpuHistory = [..._cpuHistory.slice(-MAX_POINTS + 1), cpu];
-  _ramHistory = [..._ramHistory.slice(-MAX_POINTS + 1), ram];
-  return { cpu, ram };
+  if (params?.containerName)
+    query.set("containerName", params.containerName);
+
+  if (params?.containerNames?.length)
+    query.set("containerNames", params.containerNames.join(","));
+
+  if (params?.onlyRunning !== undefined)
+    query.set("onlyRunning", String(params.onlyRunning));
+
+  const qs = query.toString();
+  const res = await fetch(`${BASE_URL}/docker/stats${qs ? `?${qs}` : ""}`);
+
+  if (!res.ok)
+    throw new Error("Error fetching metrics");
+
+  const json = await res.json();
+  const stats = json.data.stats;
+
+  return {
+    cpu: {
+      ts: Date.now(),
+      value: stats.summary.cpuAvg,
+    },
+    ram: {
+      ts: Date.now(),
+      value: stats.summary.ramAvg,
+    },
+  };
 }
 
 /* ============================================================
@@ -141,13 +152,8 @@ export async function fetchMetricsHistory(): Promise<{
   cpu: MetricPoint[];
   ram: MetricPoint[];
 }> {
-  // ── Real ──────────────────────────────────────────────────
-  // const res = await fetch(`${BASE_URL}/metrics/history`);
-  // if (!res.ok) throw new Error("Error fetching history");
-  // return res.json(); // { cpu: MetricPoint[], ram: MetricPoint[] }
-
   // ── Mock ──────────────────────────────────────────────────
   seedHistory();
   await delay(300);
-  return { cpu: [..._cpuHistory], ram: [..._ramHistory] };
+  return { cpu: [{ts:Date.now(), value:0}], ram: [{ts:Date.now(), value:0}] };
 }
