@@ -5,7 +5,7 @@ import type { ServiceRecord } from "@shared/domain.types";
 import * as helper from "./microservices.helpers"
 import { newRecord } from "./microservices.constants";
 import type { CreateServiceBody } from "./microservices.schema";
-import { createMicroserviceDirectory, removeMicroserviceDirectory } from "./microservices.files";
+import { createMicroserviceDirectory, getMicroserviceSourceCode, removeMicroserviceDirectory } from "./microservices.files";
 import { getFirstAvailablePort } from "./microservices.helpers";
 import { DEFAULT_PORT_START } from "./microservices.constants";
 
@@ -151,6 +151,14 @@ export async function deleteMicroservice(id: string): Promise<boolean | null> {
     // Elimina del registry
     await registry.removeService(id);
     return true
+}
+
+export async function getMicroserviceSource(id:string) {
+    const service = await registry.findServiceById(id);
+    if (!service) return null;
+
+    const source = await getMicroserviceSourceCode(id);
+    return source
 }
 
 // Manejo de estado de los microservicios

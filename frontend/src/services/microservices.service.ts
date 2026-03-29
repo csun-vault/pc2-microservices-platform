@@ -167,6 +167,23 @@ export async function fetchServices(): Promise<Microservice[]> {
 }
 
 /**
+ * GET /services/:id/source
+ * Retorna la lista de microservicios del backend.
+ */
+export async function fetchServiceSource(id: string): Promise<{ sourceCode: string; language: ServicesLanguage }> {
+  const res = await fetch(`${BASE_URL}/services/${id}/source`);
+  ensureOk(res, "Error fetching service source");
+
+  const json: ApiResponse<{ sourceCode: string; language: ServicesLanguage }> = await res.json();
+
+  if (!json.ok) {
+    throw new Error("Backend returned ok=false when fetching source");
+  }
+
+  return json.data;
+}
+
+/**
  * POST /services/:id/start
  * Arranca un microservicio detenido.
  */
@@ -186,6 +203,29 @@ export async function startService(name: string): Promise<Microservice> {
     : extractServiceFromMutationPayload(json);
 
   return mapServiceRecordToMicroservice(serviceRecord);
+}
+
+/**
+ * POST /services/:id/stop
+ * Detiene un microservicio activo.
+ */
+export async function invokeServiceRequest(
+  id: string,
+  payload: {
+    method: "GET" | "POST";
+    path?: string;
+    query?: string;
+    body?: string;
+  },
+): Promise<{ ok: boolean; data: unknown }> {
+  const res = await fetch(`${BASE_URL}/services/${id}/invoke`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const json = await res.json() as { ok: boolean; data: unknown };
+  return json;
 }
 
 /**
@@ -243,7 +283,7 @@ export async function createService(
 
   // Si llegamos aquí, la respuesta es 200-299
   const json = await res.json();
-  console.log(payload)
+  console.log(json)
   console.log(json)
 
   const serviceRecord = json?.data?.service
