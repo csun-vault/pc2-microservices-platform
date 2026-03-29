@@ -19,6 +19,8 @@
             "noUncheckedSideEffectImports": true,
             "moduleDetection": "force",
             "skipLibCheck": true,
+            "esModuleInterop": true,
+            "allowSyntheticDefaultImports": true,
             "paths": {
                   "@routes/*": ["./src/routes/*"],
                   "@modules/*": ["./src/modules/*"],

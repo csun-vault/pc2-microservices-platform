@@ -790,6 +790,11 @@
   opacity: 0.9;
 }
 
+.cardSelected {
+  border-color: rgba(160, 100, 255, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(160, 100, 255, 0.2), 0 0 16px rgba(130, 60, 220, 0.15) !important;
+}
+
 .cardBtn:disabled,
 .cardFooterBtn:disabled {
   opacity: 0.55;
