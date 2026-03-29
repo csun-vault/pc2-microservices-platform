@@ -16,6 +16,8 @@
             "jsx": "react-jsx",
             "verbatimModuleSyntax": false,
             "isolatedModules": true,
+            "esModuleInterop": true,
+            "allowSyntheticDefaultImports": true,
             "noUncheckedSideEffectImports": true,
             "moduleDetection": "force",
             "skipLibCheck": true,

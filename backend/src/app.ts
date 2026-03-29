@@ -4,7 +4,6 @@
 import "dotenv/config";
 import express from "express";
 
-
 // Import rutas
 import { healthRoutes } from "@routes/health.routes"
 import { dockerRoutes } from "@modules/docker/docker.routes";

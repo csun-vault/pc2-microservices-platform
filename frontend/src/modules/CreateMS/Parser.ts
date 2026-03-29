@@ -14,10 +14,42 @@ export interface DetectedParam {
 export interface ParsedService {
     method: "GET" | "POST";
     params: DetectedParam[];
+    port?: number; // Nueva propiedad opcional
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+function detectPort(src: string): number | undefined {
+    const normalized = src
+        .replace(/\\n/g, "\n")
+        .replace(/\\r/g, "\r")
+        .replace(/\\t/g, "\t");
 
+    const portSignals = [
+        // Python http.server robusto:
+        // HTTPServer(('0.0.0.0', 4002), H)
+        // HTTPServer(('', 4002), H)
+        // HTTPServer((HOST, 4002), H)
+        /(?:HTTPServer|TCPServer|ThreadingHTTPServer|ThreadingTCPServer)\s*\(\s*\(\s*[^,]+,\s*(\d+)\s*\)\s*,/i,
+
+        // Flask / FastAPI / uvicorn
+        /\bapp\.run\s*\([^)]*?\bport\s*=\s*(\d+)/i,
+        /\buvicorn\.run\s*\([^)]*?\bport\s*=\s*(\d+)/i,
+
+        // Fallback genérico Python
+        /\bport\s*=\s*(\d+)/i,
+
+        // Node
+        /\.listen\s*\(\s*(\d+)\s*[,)]/i,
+        /\.listen\s*\(\s*\{[^}]*\bport\s*:\s*(\d+)/i,
+    ];
+
+    for (const regex of portSignals) {
+        const match = normalized.match(regex);
+        if (match?.[1]) return Number(match[1]);
+    }
+
+    return undefined;
+}
 function stripStrings(src: string): string {
     return src
         .replace(/`[^`]*`/g, '``')           // JS template literals
@@ -103,10 +135,10 @@ function extractParams(src: string): DetectedParam[] {
 
     // ── PATH PARAMS ──
     // JS: /ruta/:param o /ruta/{param}
-    for (const m of src.matchAll(/['"`][^'"`]*\/:(${IDENT})/g)) add(m[1], "path");
-    for (const m of src.matchAll(/['"`][^'"`]*\/\{(${IDENT})\}/g)) add(m[1], "path");
-    // Python (Flask): /ruta/<param> o /ruta/<int:param>
-    for (const m of src.matchAll(/<\s*(?:\w+\s*:\s*)?(${IDENT})\s*>/g)) add(m[1], "path");
+    for (const m of src.matchAll(new RegExp(`['"\`][^'"\`]*\/:(${IDENT})`, "g"))) add(m[1], "path");
+    for (const m of src.matchAll(new RegExp(`['"\`][^'"\`]*\/\\{(${IDENT})\\}`, "g"))) add(m[1], "path");
+    for (const m of src.matchAll(new RegExp(`<\\s*(?:\\w+\\s*:\\s*)?(${IDENT})\\s*>`, "g"))) add(m[1], "path");
+
     // JS Destructuring: const { id } = req.params
     for (const m of src.matchAll(/const\s*\{([^}]+)\}\s*=\s*(?:req\.params|params)/g)) {
         m[1].split(",").forEach(n => add(n.trim().split(/[\s:=]/)[0], "path"));
@@ -184,8 +216,13 @@ function inferType(name: string): "string" | "number" | "boolean" {
 // ── Export principal ──────────────────────────────────────────────────────────
 
 export function parseServiceSource(sourceCode: string): ParsedService {
+    console.log("ALOO")
     const method = detectMethod(sourceCode);
-    // Ahora extraemos los params SIEMPRE, ya sea GET o POST
     const params = extractParams(sourceCode);
-    return { method, params };
+    const port = detectPort(sourceCode);
+
+    console.log("SOURCE CODE:", sourceCode);
+    console.log("DETECTED PORT:", port);
+
+    return { method, params, port };
 }
