@@ -509,13 +509,14 @@
 
 /* ── Editor de código ── */
 .editorWrapper {
-  position: relative;
+  position: relative; 
   margin: 12px 16px;
   border-radius: 12px;
   border: 1px solid rgba(160, 100, 255, 0.25);
   background: rgba(12, 10, 20, 0.8);
   max-height: 300px;
   overflow: hidden;
+  resize: vertical;
 }
 
 .editor {
