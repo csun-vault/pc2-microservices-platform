@@ -27,9 +27,9 @@ const NAV_ITEMS: NavItemConfig[] = [
 ];
 
 const MODAL_ACTIONS = [
-  { label: "Nuevo contenedor", icon: "container" as const },
-  { label: "Nueva imagen",     icon: "box"       as const },
-  { label: "Nuevo volumen",    icon: "squares"   as const },
+  { label: "[⚡WIP ] Nuevo contenedor", icon: "container" as const },
+  { label: "[⚡WIP ] Nueva imagen",     icon: "box"       as const },
+  { label: "[⚡WIP ] Nuevo volumen",    icon: "squares"   as const },
 ];
 
 /* ============================================================
@@ -208,7 +208,7 @@ export const NavBar: React.FC = () => {
 
             <div className={styles.modalActions}>
               {MODAL_ACTIONS.map((action) => (
-                <button key={action.label} className={styles.modalAction} onClick={closeModal}>
+                <button key={action.label} className={styles.modalAction} onClick={closeModal} disabled >
                   <span className={styles.modalActionIcon}>
                     <Icon name={action.icon} />
                   </span>
@@ -298,6 +298,7 @@ export const NavBar: React.FC = () => {
               className={getItemClass(item.id)}
               onClick={() => handleNavClick(item)}
               aria-current={activeId === item.id ? "page" : undefined}
+              disabled={item.id === "perfil"}
             >
               <span className={getDotClass(item.id)} aria-hidden="true" />
               <span className={styles.navIcon}>
