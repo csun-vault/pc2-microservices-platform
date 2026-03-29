@@ -48,7 +48,7 @@ export async function buildImageFromSource(params: { serviceId: string; language
                 resolve();
             },
             (event) => {
-                // Opcional: ver el progreso en tu consola del backend
+                // Opcional: ver el progreso en la consola del backend
                 if (event.stream) console.log("Docker:", event.stream.trim());
             }
         );
