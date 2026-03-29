@@ -2,6 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { Icon } from "../../components/Icons";
 import styles from "./ServiciosPage.module.css";
 import { extractPortFromCode } from "./Modal.helper";
+import { BOILERPLATE_NODE, BOILERPLATE_PYTHON } from "./Moda.constants";
+
+import Editor from 'react-simple-code-editor';
+import { highlight, languages } from 'prismjs';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/themes/prism-tomorrow.css';
 
 type Language = "python" | "node";
 
@@ -91,11 +98,18 @@ export const NewServiceModal: React.FC<NewServiceModalProps> = ({ open, onClose,
 
     const handleSubmit = async () => {
         if (!name.trim() || !code.trim()) return;
+
+        if (!internalPort) {
+            alert("No se pudo detectar el internal port del código.");
+            return;
+        }
+
         setLoading(true);
+
         try {
             await onCreate({
                 name: name.trim(),
-                internalPort: internalPort ?  Number(internalPort) : 4010,
+                internalPort: Number(internalPort),
                 externalPort: externalPort ? Number(externalPort) : null,
                 sourceCode: code,
                 language,
@@ -105,12 +119,23 @@ export const NewServiceModal: React.FC<NewServiceModalProps> = ({ open, onClose,
                 description: description || "",
             });
         } finally {
-            onClose(); // el reset lo maneja el useEffect al cambiar open → false → true
+            onClose();
             setLoading(false);
         }
     };
 
-    const isValid = name.trim() && code.trim();
+    const handleLoadTemplate = () => {
+        const template = language === "python" ? BOILERPLATE_PYTHON : BOILERPLATE_NODE;
+        setCode(template);
+
+        // Forzamos la detección del puerto inmediatamente
+        const detectedPort = extractPortFromCode(template);
+        if (detectedPort !== null) {
+            setInternalPort(String(detectedPort));
+        }
+    };
+
+    const isValid = name.trim() && code.trim() && internalPort;
 
     /* Porcentajes para el track del slider */
     const memPct = ((memLimit - MEM_MIN) / (MEM_MAX - MEM_MIN)) * 100;
@@ -185,24 +210,37 @@ export const NewServiceModal: React.FC<NewServiceModalProps> = ({ open, onClose,
 
                 {/* ── Editor de código ── */}
                 <div className={styles.editorWrapper}>
-                    <textarea
-                        className={styles.editor}
-                        placeholder={language === "python" ? DEFAULT_CODE_PYTHON : DEFAULT_CODE_NODE}
+                    <button
+                        className={styles.templateBtn}
+                        onClick={handleLoadTemplate}
+                        title="Cargar plantilla básica"
+                        type="button"
+                    >
+                        ⇓
+                    </button>
+                    <Editor
                         value={code}
-                        onChange={(e) => {
-                            const newCode = e.target.value;
+                        onValueChange={(newCode) => {
                             setCode(newCode);
-
                             const detectedPort = extractPortFromCode(newCode);
-        
-                            if (detectedPort !== null) {
-                                setInternalPort(String(detectedPort));
-                            }
-                        }}                        
-                        spellCheck={false}
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
+                            if (detectedPort !== null) setInternalPort(String(detectedPort));
+                        }}
+                        highlight={(code) =>
+                            highlight(
+                                code,
+                                language === "python" ? languages.python : languages.javascript,
+                                language
+                            )
+                        }
+                        padding={15}
+                        className={styles.codeEditor}
+                        style={{
+                            fontFamily: '"Fira Code", "Fira Mono", monospace',
+                            fontSize: 12,
+                            lineHeight: 1.6,
+                            minHeight: "200px",
+                            outline: "none",
+                        }}
                     />
                 </div>
 
@@ -237,8 +275,8 @@ export const NewServiceModal: React.FC<NewServiceModalProps> = ({ open, onClose,
                                 min={1}
                                 max={65535}
                                 value={internalPort}
-                                onChange={(e) => setInternalPort(e.target.value)}
                                 disabled
+                                onChange={(e) => setInternalPort(e.target.value)}
                             />
                             /
                             <input

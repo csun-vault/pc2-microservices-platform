@@ -12,6 +12,7 @@
   "description": "",
   "devDependencies": {
     "@types/node": "^25.3.3",
+    "@types/prismjs": "^1.26.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.9.3",
@@ -20,8 +21,10 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.2.0",
+    "prismjs": "^1.30.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.1"
+    "react-router-dom": "^7.13.1",
+    "react-simple-code-editor": "^0.14.1"
   }
 }

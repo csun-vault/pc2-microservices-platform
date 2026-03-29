@@ -88,7 +88,9 @@ export const restartService: Controller<IdParams> = async (req, res) => {
 
 export const getSourceCode: Controller<IdParams> = async (req, res) => {
     const { id } = req.params;
+    console.log(id)
     const result = await getMicroserviceSource(id);
+    console.log(result)
 
     if (!result) 
         throw new HTTPError({statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'`});

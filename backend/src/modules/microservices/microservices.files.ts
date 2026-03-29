@@ -43,7 +43,7 @@ export async function getMicroserviceSourceCode(id: string) {
         const config = JSON.parse(configRaw);
 
         // 3. Determinamos el nombre del archivo según el lenguaje
-        const fileName = config.language === "node" ? "index.js" : "app.py";
+        const fileName = config.language === "node" ? "index.js" : "main.py";
         
         // 4. Leemos el código fuente
         const sourceCode = await fs.readFile(path.join(servicePath, fileName), "utf-8");
