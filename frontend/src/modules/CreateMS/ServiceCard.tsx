@@ -22,6 +22,9 @@ interface ServiceCardProps {
     onStart: (id: string) => void | Promise<void>;
     onStop: (id: string) => void | Promise<void>;
     onDelete: (id: string) => void | Promise<void>;
+    onSelect?: (service: Microservice) => void;
+    isSelected?: boolean;
+
 }
 
 type PendingAction = "starting" | "stopping" | "deleting" | null;
@@ -35,6 +38,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     onStart,
     onStop,
     onDelete,
+    onSelect,
+    isSelected = false,
 }) => {
     const [pendingAction, setPendingAction] = useState<PendingAction>(null);
     const [logsOpen, setLogsOpen] = useState(false);
@@ -134,38 +139,38 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
     async function handleSend() {
         const base = `http://localhost:${service.port}`;
- 
+
         // GET — abre directo en el navegador, sin CORS
         if (method === "GET") {
             const qs = params
                 .filter(p => p.in !== "path" && paramValues[p.name])
                 .map(p => `${encodeURIComponent(p.name)}=${encodeURIComponent(paramValues[p.name])}`)
                 .join("&");
- 
+
             const path = params
                 .filter(p => p.in === "path")
                 .reduce((acc, p) => acc
-                    .replace(`:${p.name}`,  encodeURIComponent(paramValues[p.name] ?? ""))
+                    .replace(`:${p.name}`, encodeURIComponent(paramValues[p.name] ?? ""))
                     .replace(`{${p.name}}`, encodeURIComponent(paramValues[p.name] ?? "")),
-                "");
- 
+                    "");
+
             window.open(`${base}${path}${qs ? `?${qs}` : ""}`, "_blank");
             return;
         }
- 
+
         // POST — va a través del backend proxy para evitar CORS,
         // luego muestra la respuesta en una pestaña nueva
         setSendStatus("idle");
         try {
             const result = await invokeServiceRequest(service.id, {
                 method: "POST",
-                body:   bodyValue,
+                body: bodyValue,
             });
- 
+
             const display = JSON.stringify(result.data, null, 2);
-            const status  = result.ok ? "ok" : "err";
-            const color   = result.ok ? "#4ade80" : "#f87171";
- 
+            const status = result.ok ? "ok" : "err";
+            const color = result.ok ? "#4ade80" : "#f87171";
+
             const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -184,12 +189,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   <pre>${display.replace(/</g, "&lt;")}</pre>
 </body>
 </html>`;
- 
+
             const blob = new Blob([html], { type: "text/html" });
-            const url  = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
             window.open(url, "_blank");
             setTimeout(() => URL.revokeObjectURL(url), 5000);
- 
+
             setSendStatus(result.ok ? "ok" : "err");
         } catch {
             setSendStatus("err");
@@ -200,14 +205,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <div style={{ position: "relative" }} ref={dropdownRef}>
+        <div style={{ position: "relative" }} ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
             <BaseCard
                 variant="normal"
                 padding="sm"
                 radius="lg"
-                className={`${styles.cardInner} ${isBusy ? styles.cardBusy : ""}`}
+                className={`${styles.cardInner} ${isBusy ? styles.cardBusy : ""} ${isSelected ? styles.cardSelected : ""}`}
                 tilt
                 tiltMax={2}
+                onClick={() => onSelect?.(service)}
             >
                 <span className={styles.cardIndex}>{index}</span>
 
@@ -225,7 +231,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
                     <span className={styles.cardPort}>{service.port}</span>
 
-                    <div className={styles.cardActions}>
+                    <div className={styles.cardActions} onClick={(e) => e.stopPropagation()}>
                         {isActive ? (
                             <button
                                 className={styles.cardBtn}
@@ -289,11 +295,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                     </div>
                 )}
 
-                <div className={styles.cardFooter}>
+                <div className={styles.cardFooter} onClick={(e) => e.stopPropagation()}>
                     <button
                         className={`${styles.cardFooterBtn} ${logsOpen ? styles.cardFooterBtnActive : ""}`}
-                        aria-label="Ver logs"
-                        title="Ver logs"
+                        aria-label="Args"
+                        title="Args"
                         disabled={isBusy}
                         onClick={handleToggleLogs}
                     >
