@@ -17,4 +17,7 @@ router.get("/summary", dockerGuard, dc.getSummary);
 // 🟩 GET - Listar informacion de la UI - docker/summary
 router.get("/stats", dockerGuard, dc.getStats);
 
+// 🟩 GET - Mostrar los logs de un container - docker/logs/:containerName
+router.get("/logs/:containerName", dockerGuard, dc.getLogs);
+
 export const dockerRoutes = router;

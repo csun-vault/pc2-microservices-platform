@@ -1,11 +1,13 @@
-export function isPortAllocatedError(err: unknown): boolean {
-    const message = err instanceof Error ? err.message : String(err);
+import { RuntimeStatus } from "@shared/domain.types";
 
-    return (
-        message.includes("port is already allocated") ||
-        message.includes("address already in use") ||
-        message.includes("Bind for 0.0.0.0")
-    );
+export function isPortAllocatedError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+
+  return (
+    message.includes("port is already allocated") ||
+    message.includes("address already in use") ||
+    message.includes("Bind for 0.0.0.0")
+  );
 }
 
 export function calculateCpuPercent(stats: any): number {
@@ -39,4 +41,40 @@ export function calculateRAMPercent(stats: any): number {
   const used = Math.max(usage - cache, 0);
 
   return (used / limit) * 100;
+}
+
+export type ContainerLogsOptions = {
+  tail?: number;
+  timestamps?: boolean;
+};
+
+export type ContainerLogsResponse = {
+  containerId: string;
+  containerName: string;
+  status: RuntimeStatus;
+  tail: number;
+  timestamps: boolean;
+  content: string;
+};
+
+export function mapDockerStateToRuntimeStatus(state?: string): RuntimeStatus {
+  if (state === "running") return "running";
+  if (state === "restarting") return "restarting";
+  return "stopped";
+}
+
+export async function readTextStream(stream: NodeJS.ReadableStream): Promise<string> {
+  const chunks: Buffer[] = [];
+
+  return await new Promise<string>((resolve, reject) => {
+    stream.on("data", (chunk) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+
+    stream.on("end", () => {
+      resolve(Buffer.concat(chunks).toString("utf8"));
+    });
+
+    stream.on("error", reject);
+  });
 }

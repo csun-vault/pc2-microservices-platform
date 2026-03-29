@@ -3,10 +3,10 @@ import type { ServiceContainerRef, ContainerMetricUsage, ContainersMetricsRespon
 
 import * as df from "./docker.files"
 import type { ServicesLanguage } from "@shared/domain.types";
-import { calculateCpuPercent, calculateRAMPercent, isPortAllocatedError } from "./docker.helper";
+import { calculateCpuPercent, calculateRAMPercent, ContainerLogsOptions, ContainerLogsResponse, isPortAllocatedError, mapDockerStateToRuntimeStatus, readTextStream } from "./docker.helper";
 import { get } from "http";
 import { StatsQuery } from "@modules/docker/docker.schema";
-
+import { PassThrough } from "stream";
 
 /*
     ==================================
@@ -70,6 +70,75 @@ async function getContainerInfo(containerName: string) {
     const info = await container.inspect();
 
     return { container, info };
+}
+
+
+async function normalizeDockerLogs(
+    raw: NodeJS.ReadableStream | Buffer,
+    tty: boolean
+): Promise<string> {
+    const docker = getDocker();
+
+    if (Buffer.isBuffer(raw)) {
+        return raw.toString("utf8").trim();
+    }
+
+    if (tty) {
+        return (await readTextStream(raw)).trim();
+    }
+
+    const stdout = new PassThrough();
+    const stderr = new PassThrough();
+
+    const stdoutPromise = readTextStream(stdout);
+    const stderrPromise = readTextStream(stderr);
+
+    raw.on("end", () => {
+        stdout.end();
+        stderr.end();
+    });
+
+    raw.on("error", (err) => {
+        stdout.destroy(err as Error);
+        stderr.destroy(err as Error);
+    });
+
+    docker.modem.demuxStream(raw as any, stdout, stderr);
+
+    const [out, err] = await Promise.all([stdoutPromise, stderrPromise]);
+
+    return [out, err].filter(Boolean).join("\n").trim();
+}
+
+export async function getContainerLogs(
+    containerName: string,
+    options: ContainerLogsOptions = {}
+): Promise<ContainerLogsResponse | null> {
+    const { container, info } = await getContainerInfo(containerName);
+
+    if (!info) return null;
+
+    const tail = options.tail ?? 200;
+    const timestamps = options.timestamps ?? true;
+
+    const rawLogs = await container.logs({
+        stdout: true,
+        stderr: true,
+        follow: false as const,
+        timestamps,
+        tail,
+    });
+
+    const content = rawLogs.toString("utf8").trim();
+
+    return {
+        containerId: info.Id,
+        containerName,
+        status: mapDockerStateToRuntimeStatus(info.State?.Status),
+        tail,
+        timestamps,
+        content,
+    };
 }
 
 async function getOneContainerMetrics(containerRef: { containerId: string; containerName: string; status?: RuntimeStatus }): Promise<ContainerMetricUsage | null> {

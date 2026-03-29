@@ -1,7 +1,7 @@
 import { type Controller } from "@type/express.types"
 import { HTTPError } from "@modules/app/error.model";
 import * as ds from "@libs/docker/docker.service"
-import { validateStatsQuery } from "./docker.schema";
+import { validateLogsQuery, validateStatsQuery } from "./docker.schema";
 
 // Health route, tomar la version de Docker y ver si está corriendo
 export const getDaemonVersion : Controller = async (req, res) => {
@@ -32,4 +32,19 @@ export const getStats: Controller = async (req, res) => {
     throw new HTTPError({statusCode: 404, type: "NOT_FOUND", message: "No se encontraron contenedores para los nombres enviados" });
 
   return res.json({ ok: true, data: { stats } });
+};
+
+export const getLogs: Controller<{containerName: string}> = async (req, res) => {
+    const containerName = req.params.containerName?.trim();
+
+    if (!containerName)
+        throw new HTTPError({ statusCode: 400, type: "VALIDATION_ERROR", message: "Debes enviar un 'containerName' válido en la URL" });
+
+    const query = validateLogsQuery(req.query);
+    const logs = await ds.getContainerLogs(containerName, query);
+
+    if (!logs) 
+        throw new HTTPError({statusCode: 404, type: "NOT_FOUND", message: `No existe un contenedor con nombre '${containerName}'`});
+
+    return res.json({ ok: true, data: { logs } });
 };

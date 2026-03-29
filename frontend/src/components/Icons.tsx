@@ -15,8 +15,9 @@ import plus from '../assets/icons/plus.svg?react';
 import squares from '../assets/icons/squares.svg?react';
 import trash from '../assets/icons/trash.svg?react';
 import user from '../assets/icons/user.svg?react';
+import external from '../assets/icons/external-link.svg?react'
 
-type IconName = 'box' | 'chartBar' | 'container' | 'docker' | 'errorIcon' | 'home' | 'layout' | 'list' | 'off' | 'on' | 'user' | 'pause' | 'play' | 'squares' | 'trash' | 'plus';
+type IconName = 'box' | 'chartBar' | 'container' | 'docker' | 'errorIcon' | 'home' | 'layout' | 'list' | 'off' | 'on' | 'user' | 'pause' | 'play' | 'squares' | 'trash' | 'plus' | 'external';
 
 const icons: Record<IconName, React.FC<React.SVGProps<SVGSVGElement>>> = {
     box: Box,
@@ -35,7 +36,7 @@ const icons: Record<IconName, React.FC<React.SVGProps<SVGSVGElement>>> = {
     squares: squares,
     trash: trash,
     user: user,
-
+    external: external,
 
 };
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Microservice } from "../../services/microservices.service";
 import { Icon } from "../../components/Icons";
 import styles from "./ServiceDetailPanel.module.css";
+import { fetchContainerLogs } from "../../services/details.service";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -28,10 +29,32 @@ export const ServiceDetailPanel: React.FC<ServiceDetailPanelProps> = ({
     const [activeTab, setActiveTab] = useState<Tab>("info");
     const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
+    const [logs, setLogs] = useState<string>("");
+    const [loadingLogs, setLoadingLogs] = useState(false);
+
     const isRunning = service.status === "running";
     const isPaused = service.status === "paused";
     const isActive = isRunning || isPaused;
     const isBusy = pendingAction !== null;
+
+    // Efecto para cargar logs cuando cambia a la pestaña "logs"
+    useEffect(() => {
+        if (activeTab === "logs" && service.containerName) {
+            loadLogs();
+        }
+    }, [activeTab, service.containerName]);
+
+    async function loadLogs() {
+        setLoadingLogs(true);
+        try {
+            const content = await fetchContainerLogs(service.containerName);
+            setLogs(content || "No hay logs disponibles para este contenedor.");
+        } catch (err) {
+            setLogs("Error al cargar los logs.");
+        } finally {
+            setLoadingLogs(false);
+        }
+    }
 
     // ── Cierre por Escape ──────────────────────────────────────────────────────
     useEffect(() => {
@@ -165,9 +188,97 @@ export const ServiceDetailPanel: React.FC<ServiceDetailPanelProps> = ({
             {/* ── Contenido ─────────────────────────────────────────────────────── */}
             <div className={styles.tabContent} role="tabpanel" aria-label={activeTab}>
                 {activeTab === "info" && (
-                    <p className={styles.description}>
-                        {service.description || <span className={styles.descriptionEmpty}>Sin descripción.</span>}
-                    </p>
+                    <div className={styles.infoContainer}>
+                        {/* Sección de Descripción */}
+                        <div className={styles.infoSection}>
+                            <h4 className={styles.infoTitle}>Descripción</h4>
+                            <p className={styles.descriptionText}>
+                                {service.description || <span className={styles.descriptionEmpty}>Sin descripción disponible.</span>}
+                            </p>
+                        </div>
+
+                        {/* Grid de Metadatos */}
+                        <div className={styles.metadataGrid}>
+                            {/* Red */}
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>URL de Acceso</span>
+                                <a href={service.url} target="_blank" rel="noreferrer" className={styles.metaLink}>
+                                    {service.url} <Icon name="external" width={10} height={10} />
+                                </a>
+                            </div>
+
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>Base Path</span>
+                                <code className={styles.metaCode}>{service.basePath}</code>
+                            </div>
+
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>Puerto Interno</span>
+                                <span className={styles.metaValue}>{service.internalPort}</span>
+                            </div>
+
+                            {/* Contenedor */}
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>Imagen Docker</span>
+                                <span className={styles.metaValue}>{service.imageName}</span>
+                            </div>
+
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>Nombre Contenedor</span>
+                                <span className={styles.metaValue}>{service.containerName}</span>
+                            </div>
+
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>Health Check</span>
+                                <span className={`${styles.healthBadge} ${service.backendStatus === 'UP' ? styles.healthUp : styles.healthDown}`}>
+                                    {service.backendStatus || 'UNKNOWN'}
+                                </span>
+                            </div>
+
+                            {/* Fechas */}
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>Creado</span>
+                                <span className={styles.metaValue}>
+                                    {new Date(service.createdAt).toLocaleDateString()}
+                                </span>
+                            </div>
+
+                            <div className={styles.metaItem}>
+                                <span className={styles.metaLabel}>ID del Servicio</span>
+                                <code className={styles.metaCodeSmall}>{service.id}</code>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Tab INFO (ya lo tienes) ── */}
+                {activeTab === "info" && (
+                    <div className={styles.infoContainer}>
+                        {/* ... tu código de info ... */}
+                    </div>
+                )}
+
+                {/* ── Tab LOGS ── */}
+                {activeTab === "logs" && (
+                    <div className={styles.logsContainer}>
+                        <div className={styles.logsHeader}>
+                            <span className={styles.logsTitle}>System Output</span>
+                            <button onClick={loadLogs} className={styles.refreshBtn} title="Recargar logs">⟳</button>
+                        </div>
+                        
+                        <div className={styles.terminal}>
+                            {loadingLogs ? (
+                                <div className={styles.logsLoading}>
+                                    <span className={styles.spinner} />
+                                    <span>Cargando logs...</span>
+                                </div>
+                            ) : (
+                                <pre className={styles.logsContent}>
+                                    {logs || "Esperando salida del sistema..."}
+                                </pre>
+                            )}
+                        </div>
+                    </div>
                 )}
             </div>
 
