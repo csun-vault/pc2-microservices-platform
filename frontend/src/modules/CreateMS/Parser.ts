@@ -156,7 +156,7 @@ function extractParams(src: string): DetectedParam[] {
     }
 
     // 3. Métodos .get(): .get('xxx')
-    for (const m of src.matchAll(/\.get\(['"]([^'"]+)['"]\)/g)) {
+    for (const m of src.matchAll(/\.get\(\s*['"]([^'"]+)['"]\s*(?:,|\))/g)) {
         add(m[1], "query");
     }
 
@@ -174,13 +174,19 @@ function extractParams(src: string): DetectedParam[] {
 
     // 6. Uso del alias: query.celsius
     for (const alias of queryAliases) {
-        const dotRe = new RegExp(`\\b${alias}\\.(${IDENT})`, "g");
+        // query.celsius
+        const dotRe = new RegExp(`\\b${alias}\\.(${IDENT})\\b(?!\\s*\\()`, "g");
         for (const m of src.matchAll(dotRe)) add(m[1], "query");
 
+        // query["celsius"]
         const bracketRe = new RegExp(`\\b${alias}\\[['"](${IDENT})['"]\\]`, "g");
         for (const m of src.matchAll(bracketRe)) add(m[1], "query");
-    }
 
+        // query.get("name") o query.get("name", default)
+        const getterRe = new RegExp(`\\b${alias}\\.get\\(\\s*['"](${IDENT})['"]\\s*(?:,|\\))`, "g");
+        for (const m of src.matchAll(getterRe)) add(m[1], "query");
+    }
+    
     // ── BODY PARAMS (Para POST) ──
     // JS: req.body.xxx
     for (const m of src.matchAll(new RegExp(`req\\.body\\.?(${IDENT})|req\\.body\\[['"]?(${IDENT})['"]?\\]`, "g"))) {
@@ -203,6 +209,7 @@ function extractParams(src: string): DetectedParam[] {
         });
     }
 
+    console.log(Array.from(found.values()));
     return Array.from(found.values());
 }
 
