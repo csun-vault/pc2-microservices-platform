@@ -9,7 +9,6 @@ import styles from "./ServiciosPage.module.css";
 
 interface ServiceCardProps {
     service: Microservice & {
-        // Overrides manuales opcionales (tienen prioridad sobre la auto-detección)
         method?: "GET" | "POST";
         params?: Array<{
             name: string;
@@ -22,6 +21,8 @@ interface ServiceCardProps {
     onStart: (id: string) => void | Promise<void>;
     onStop: (id: string) => void | Promise<void>;
     onDelete: (id: string) => void | Promise<void>;
+    onSelect?: (service: Microservice) => void;
+    isSelected?: boolean;
 }
 
 type PendingAction = "starting" | "stopping" | "deleting" | null;
@@ -35,6 +36,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     onStart,
     onStop,
     onDelete,
+    onSelect,
+    isSelected = false,
 }) => {
     const [pendingAction, setPendingAction] = useState<PendingAction>(null);
     const [logsOpen, setLogsOpen] = useState(false);
@@ -42,16 +45,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     const [bodyValue, setBodyValue] = useState("{\n  \n}");
     const [sendStatus, setSendStatus] = useState<"idle" | "ok" | "err">("idle");
 
-    // Source & parsed state
     const [sourceState, setSourceState] = useState<SourceState>("idle");
     const [detectedMethod, setDetectedMethod] = useState<"GET" | "POST" | null>(null);
     const [detectedParams, setDetectedParams] = useState<ReturnType<typeof parseServiceSource>["params"] | null>(null);
 
     const dropdownRef = useRef<HTMLDivElement>(null);
-    // Evita re-fetch si ya se cargó para este servicio
     const fetchedRef = useRef(false);
 
-    // Overrides manuales tienen prioridad; si no hay, usa lo detectado; fallback GET
     const method = service.method ?? detectedMethod ?? "GET";
     const params = service.params ?? detectedParams ?? [];
 
@@ -67,30 +67,20 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             ? styles.statusDotPaused
             : styles.statusDotStopped;
 
-    // ── Fetch source al abrir el dropdown (una sola vez) ──────────────────────
+    // ── Fetch source ──────────────────────────────────────────────────────────
     const fetchSource = useCallback(async () => {
-        // 1. Evitar re-fetch si ya se cargó o está cargando
         if (fetchedRef.current || sourceState === "loading") return;
-
         fetchedRef.current = true;
         setSourceState("loading");
-
         try {
-            // 2. Llamamos a nuestra nueva función del servicio
             const data = await fetchServiceSource(service.id);
-
-            // 3. Procesamos el código con tu Parser
             const parsed = parseServiceSource(data.sourceCode);
-
-            // 4. Actualizamos los estados de detección
             setDetectedMethod(parsed.method);
             setDetectedParams(parsed.params);
             setSourceState("ready");
-
         } catch (err) {
             console.error("Error en fetchSource:", err);
             setSourceState("error");
-            // Opcional: permitir reintentar si falló
             fetchedRef.current = false;
         }
     }, [service.id, sourceState]);
@@ -101,7 +91,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         if (next) fetchSource();
     }
 
-    // Cierra al hacer click fuera
     useEffect(() => {
         if (!logsOpen) return;
         function handler(e: MouseEvent) {
@@ -114,7 +103,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     }, [logsOpen]);
 
     // ── Action handlers ───────────────────────────────────────────────────────
-
     async function handleStart() {
         try { setPendingAction("starting"); await onStart(service.id); }
         finally { setPendingAction(null); }
@@ -134,38 +122,33 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
     async function handleSend() {
         const base = `http://localhost:${service.port}`;
- 
-        // GET — abre directo en el navegador, sin CORS
+
         if (method === "GET") {
             const qs = params
                 .filter(p => p.in !== "path" && paramValues[p.name])
                 .map(p => `${encodeURIComponent(p.name)}=${encodeURIComponent(paramValues[p.name])}`)
                 .join("&");
- 
             const path = params
                 .filter(p => p.in === "path")
                 .reduce((acc, p) => acc
                     .replace(`:${p.name}`,  encodeURIComponent(paramValues[p.name] ?? ""))
                     .replace(`{${p.name}}`, encodeURIComponent(paramValues[p.name] ?? "")),
                 "");
- 
             window.open(`${base}${path}${qs ? `?${qs}` : ""}`, "_blank");
             return;
         }
- 
-        // POST — va a través del backend proxy para evitar CORS,
-        // luego muestra la respuesta en una pestaña nueva
+
         setSendStatus("idle");
         try {
             const result = await invokeServiceRequest(service.id, {
                 method: "POST",
                 body:   bodyValue,
             });
- 
+
             const display = JSON.stringify(result.data, null, 2);
             const status  = result.ok ? "ok" : "err";
             const color   = result.ok ? "#4ade80" : "#f87171";
- 
+
             const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -184,12 +167,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   <pre>${display.replace(/</g, "&lt;")}</pre>
 </body>
 </html>`;
- 
+
             const blob = new Blob([html], { type: "text/html" });
             const url  = URL.createObjectURL(blob);
             window.open(url, "_blank");
             setTimeout(() => URL.revokeObjectURL(url), 5000);
- 
             setSendStatus(result.ok ? "ok" : "err");
         } catch {
             setSendStatus("err");
@@ -200,14 +182,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <div style={{ position: "relative" }} ref={dropdownRef}>
+        // stopPropagation: evita que el click llegue al wrapper de DetallePage (que cierra el panel)
+        <div style={{ position: "relative" }} ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
             <BaseCard
                 variant="normal"
                 padding="sm"
                 radius="lg"
-                className={`${styles.cardInner} ${isBusy ? styles.cardBusy : ""}`}
+                className={`${styles.cardInner} ${isBusy ? styles.cardBusy : ""} ${isSelected ? styles.cardSelected : ""}`}
                 tilt
                 tiltMax={2}
+                onClick={() => onSelect?.(service)}
             >
                 <span className={styles.cardIndex}>{index}</span>
 
@@ -225,7 +209,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
                     <span className={styles.cardPort}>{service.port}</span>
 
-                    <div className={styles.cardActions}>
+                    {/* stopPropagation: los botones no disparan onSelect */}
+                    <div className={styles.cardActions} onClick={(e) => e.stopPropagation()}>
                         {isActive ? (
                             <button
                                 className={styles.cardBtn}
@@ -289,7 +274,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                     </div>
                 )}
 
-                <div className={styles.cardFooter}>
+                {/* stopPropagation: el botón de logs no dispara onSelect */}
+                <div className={styles.cardFooter} onClick={(e) => e.stopPropagation()}>
                     <button
                         className={`${styles.cardFooterBtn} ${logsOpen ? styles.cardFooterBtnActive : ""}`}
                         aria-label="Ver logs"
@@ -305,7 +291,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             {/* ── Logs dropdown ────────────────────────────────────────────── */}
             <div className={`${styles.logsDropdown} ${logsOpen ? styles.logsDropdownOpen : ""}`}>
 
-                {/* Header */}
                 <div className={styles.logsHeader}>
                     {sourceState === "loading" ? (
                         <span className={styles.sourceLoading}>
@@ -339,7 +324,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
                 <div className={styles.logsDivider} />
 
-                {/* Body — GET */}
                 {method === "GET" && sourceState !== "loading" && (
                     <div className={styles.logsBody}>
                         {params.length === 0 ? (
@@ -369,7 +353,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                     </div>
                 )}
 
-                {/* Body — POST */}
                 {method === "POST" && sourceState !== "loading" && (
                     <div className={styles.logsBody}>
                         <textarea
@@ -382,7 +365,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                     </div>
                 )}
 
-                {/* Loading skeleton */}
                 {sourceState === "loading" && (
                     <div className={styles.logsBody}>
                         <div className={styles.paramSkeleton} />
@@ -392,7 +374,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 
                 <div className={styles.logsDivider} />
 
-                {/* Footer */}
                 <div className={styles.logsFooter}>
                     <button
                         className={`${styles.sendBtn} ${sendStatus === "ok" ? styles.sendOk :
