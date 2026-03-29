@@ -1,139 +1,254 @@
 /* ============================================================
    services/microservices.service.ts
-   Capa de datos — mock listo para conectar a API real.
+   Capa de datos conectada al backend real.
 
-   Para conectar a tu backend real:
-   1. Cambia BASE_URL a tu endpoint.
-   2. Descomenta las llamadas fetch reales.
-   3. Elimina los datos MOCK_* y los setTimeout.
+   - Usa los tipos compartidos del dominio
+   - Lee la respuesta real de /services
+   - Adapta ServiceRecord -> Microservice para la UI
    ============================================================ */
 
-// ---- Tipos ------------------------------------------------
+import type {
+  ServiceRecord,
+  ServicesLanguage,
+  ServiceStatus as BackendServiceStatus,
+  RuntimeStatus,
+} from "../../../shared/domain.types";
 
-export type ServiceStatus = "running" | "stopped" | "paused";
+// ---- Tipos UI ---------------------------------------------
+
+export type UiServiceStatus = "running" | "stopped" | "paused";
 
 export interface Microservice {
   id: string;
   name: string;
+  description: string;
+  language: ServicesLanguage;
+
+  status: UiServiceStatus;
+
   port: number;
-  status: ServiceStatus;
-  cpu: number;   // porcentaje 0–100
-  ram: number;   // porcentaje 0–100
+  internalPort: number;
+  externalPort: number;
+
+  url: string;
+  basePath: string;
+
+  cpu: number;
+  ram: number;
+
+  createdAt: string;
+  updatedAt: string;
+
+  backendStatus: BackendServiceStatus;
+  runtimeStatus: RuntimeStatus;
+  containerName: string;
+  imageName: string;
 }
 
 export interface CreateServicePayload {
-  name:       string;
-  port:       number | null;
-  code:       string;
-  language:   "python" | "node";
+  name: string;
+  description: string;
+  language: ServicesLanguage;
+  internalPort: number | null;
+  externalPort: number | null;
+  sourceCode: string;
   memLimitMB: number;
-  cpuCores:   number;
-  autoStart:  boolean;
+  cpuCores: number;
+  autoStart: boolean;
 }
+
+// ---- Tipos API reales -------------------------------------
+
+type ApiResponse<T> = {
+  ok: boolean;
+  data: T;
+};
+
+type GetServicesResponse = ApiResponse<{
+  services: ServiceRecord[];
+}>;
+
+type CreateServiceResponse = ApiResponse<{
+  service: ServiceRecord;
+}>;
+
+type StartStopServiceResponse = ApiResponse<{
+  service: ServiceRecord;
+}>;
 
 // ---- Config -----------------------------------------------
 
-const BASE_URL = "/api"; // Cambia a tu URL real cuando tengas backend
+const BASE_URL = import.meta.env.VITE_BASE_URL
+console.log(BASE_URL)
+// ---- Helpers ----------------------------------------------
 
-// ---- Mock data --------------------------------------------
+function ensureOk(response: Response, fallbackMessage: string) {
+  if (!response.ok) {
+    throw new Error(fallbackMessage);
+  }
+}
 
-const MOCK_SERVICES: Microservice[] = [
-  { id: "1", name: "myPython", port: 3000, status: "running", cpu: 45, ram: 62 },
-  { id: "2", name: "myFlask",  port: 3001, status: "paused",  cpu: 12, ram: 28 },
-  { id: "3", name: "myPython", port: 3010, status: "stopped", cpu: 0,  ram: 5  },
-  { id: "4", name: "myNode",   port: 3000, status: "stopped", cpu: 0,  ram: 3  },
-  { id: "5", name: "myNode",   port: 3000, status: "stopped", cpu: 0,  ram: 8  },
-];
+function mapUiStatus(
+  backendStatus: BackendServiceStatus,
+  runtimeStatus: RuntimeStatus
+): UiServiceStatus {
+  if (backendStatus === "BUILDING") return "paused";
+  if (backendStatus === "ERROR") return "paused";
+  if (runtimeStatus === "restarting") return "paused";
+  if (runtimeStatus === "running") return "running";
+  return "stopped";
+}
 
-// ---- Helpers mock -----------------------------------------
+function mapServiceRecordToMicroservice(service: ServiceRecord): Microservice {
+  return {
+    id: service.metadata.id,
+    name: service.metadata.displayName,
+    description: service.metadata.description,
+    language: service.metadata.language,
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    status: mapUiStatus(
+      service.metadata.status,
+      service.container.status ?? service.metadata.runtimeStatus
+    ),
+
+    port: service.endpoint?.port ?? service.ports?.external ?? 0,
+    internalPort: service.ports?.internal ?? 0,
+    externalPort: service.ports?.external ?? 0,
+
+    url: service.endpoint?.url ?? "",
+    basePath: service.endpoint?.basePath ?? "",
+
+    cpu: service.resources?.usage?.cpuPercent ?? 0,
+    ram: service.resources?.usage?.memoryPercent ?? 0,
+
+    createdAt: service.metadata.createdAt,
+    updatedAt: service.metadata.updatedAt,
+
+    backendStatus: service.metadata.status,
+    runtimeStatus: service.container.status ?? service.metadata.runtimeStatus,
+    containerName: service.container?.containerName ?? "",
+    imageName: service.build?.imageName ?? service.container?.image?.name ?? "",
+  };
+}
+
+function extractServiceFromMutationPayload(payload: unknown): ServiceRecord {
+  const data = payload as Partial<StartStopServiceResponse["data"]> &
+    Partial<CreateServiceResponse["data"]> &
+    Partial<ServiceRecord>;
+
+  if ("metadata" in (data as object) && "container" in (data as object)) {
+    return data as ServiceRecord;
+  }
+
+  if (data.service) {
+    return data.service;
+  }
+
+  throw new Error("La respuesta del backend no contiene un service válido");
+}
 
 // ---- API --------------------------------------------------
 
 /**
- * GET /api/services
- * Retorna la lista de microservicios.
+ * GET /services
+ * Retorna la lista de microservicios del backend.
  */
 export async function fetchServices(): Promise<Microservice[]> {
-  // ── Real ──────────────────────────────────────────────────
-  // const res = await fetch(`${BASE_URL}/services`);
-  // if (!res.ok) throw new Error("Error fetching services");
-  // return res.json();
+  const res = await fetch(`${BASE_URL}/services`);
+  ensureOk(res, "Error fetching services");
 
-  // ── Mock ──────────────────────────────────────────────────
-  await delay(600);
-  return [...MOCK_SERVICES];
+  const json: GetServicesResponse = await res.json();
+
+  if (!json.ok) {
+    throw new Error("Backend returned ok=false when fetching services");
+  }
+
+  return json.data.services.map(mapServiceRecordToMicroservice);
 }
 
 /**
- * POST /api/services/:id/start
+ * POST /services/:id/start
  * Arranca un microservicio detenido.
  */
-export async function startService(id: string): Promise<Microservice> {
-  // const res = await fetch(`${BASE_URL}/services/${id}/start`, { method: "POST" });
-  // if (!res.ok) throw new Error("Error starting service");
-  // return res.json();
+export async function startService(name: string): Promise<Microservice> {
+  const res = await fetch(`${BASE_URL}/services/${name}/start`, {
+    method: "POST",
+  });
+  ensureOk(res, "Error starting service");
 
-  await delay(400);
-  const svc = MOCK_SERVICES.find((s) => s.id === id)!;
-  svc.status = "running";
-  return { ...svc };
+  const json = await res.json();
+
+  // Soporta:
+  // { ok, data: { service } }
+  // o directamente { metadata, container, ... }
+  const serviceRecord = json?.data
+    ? extractServiceFromMutationPayload(json.data)
+    : extractServiceFromMutationPayload(json);
+
+  return mapServiceRecordToMicroservice(serviceRecord);
 }
 
 /**
- * POST /api/services/:id/stop
+ * POST /services/:id/stop
  * Detiene un microservicio activo.
  */
-export async function stopService(id: string): Promise<Microservice> {
-  // const res = await fetch(`${BASE_URL}/services/${id}/stop`, { method: "POST" });
-  // if (!res.ok) throw new Error("Error stopping service");
-  // return res.json();
+export async function stopService(name: string): Promise<Microservice> {
+  const res = await fetch(`${BASE_URL}/services/${name}/stop`, {
+    method: "POST",
+  });
+  ensureOk(res, "Error stopping service");
 
-  await delay(400);
-  const svc = MOCK_SERVICES.find((s) => s.id === id)!;
-  svc.status = "stopped";
-  return { ...svc };
+  const json = await res.json();
+
+  const serviceRecord = json?.data
+    ? extractServiceFromMutationPayload(json.data)
+    : extractServiceFromMutationPayload(json);
+
+  return mapServiceRecordToMicroservice(serviceRecord);
 }
 
 /**
- * DELETE /api/services/:id
+ * DELETE /services/:id
  * Elimina un microservicio.
  */
 export async function deleteService(id: string): Promise<void> {
-  // const res = await fetch(`${BASE_URL}/services/${id}`, { method: "DELETE" });
-  // if (!res.ok) throw new Error("Error deleting service");
-
-  await delay(400);
-  const idx = MOCK_SERVICES.findIndex((s) => s.id === id);
-  if (idx !== -1) MOCK_SERVICES.splice(idx, 1);
+  const res = await fetch(`${BASE_URL}/services/${id}/delete`, {
+    method: "DELETE",
+  });
+  ensureOk(res, "Error deleting service");
 }
 
 /**
- * POST /api/services
+ * POST /services
  * Crea un nuevo microservicio.
  * Body: { name, port, code, language, memLimitMB, cpuCores, autoStart }
  */
 export async function createService(
   payload: CreateServicePayload
 ): Promise<Microservice> {
-  // const res = await fetch(`${BASE_URL}/services`, {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify(payload),
-  // });
-  // if (!res.ok) throw new Error("Error creating service");
-  // return res.json();
+  const res = await fetch(`${BASE_URL}/services`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-  await delay(800);
-  const newService: Microservice = {
-    id:     String(Date.now()),
-    name:   payload.name,
-    port:   payload.port ?? 0,  // 0 indica puerto por defecto (asignado por el backend)
-    status: payload.autoStart ? "running" : "stopped",
-    cpu:    0,
-    ram:    0,
-  };
-  MOCK_SERVICES.push(newService);
-  return newService;
+  // 1. Si la respuesta no es exitosa (2xx)
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+
+    const errorMessage = errorData.message || `Error ${res.status}: Falló la creación`;
+
+    throw new Error(errorMessage);
+  }
+
+  // Si llegamos aquí, la respuesta es 200-299
+  const json = await res.json();
+  console.log(payload)
+  console.log(json)
+
+  const serviceRecord = json?.data?.service
+    ? extractServiceFromMutationPayload(json.data)
+    : extractServiceFromMutationPayload(json);
+
+  return mapServiceRecordToMicroservice(serviceRecord);
 }

@@ -6,40 +6,93 @@ import * as helper from "./microservices.helpers"
 import { newRecord } from "./microservices.constants";
 import type { CreateServiceBody } from "./microservices.schema";
 import { createMicroserviceDirectory, removeMicroserviceDirectory } from "./microservices.files";
+import { getFirstAvailablePort } from "./microservices.helpers";
+import { DEFAULT_PORT_START } from "./microservices.constants";
 
-
-export async function createMicroservice(body: CreateServiceBody): Promise<{ reason?:string, rec?:ServiceRecord, ok:boolean, port?:number }> {
-    const { name, language, sourceCode, port } = body;
+export async function createMicroservice(
+    body: CreateServiceBody
+): Promise<{ reason?: string; rec?: ServiceRecord; ok: boolean; internalPort?: number; externalPort?:number }> {
+    let {
+        name,
+        language,
+        sourceCode,
+        internalPort,
+        externalPort,
+        description,
+    } = body;
 
     const exists = await helper.microserviceExists(name);
-    if (exists) return {ok:false, reason:"NAME_ALREADY_EXISTS"};
+    if (exists) return { ok: false, reason: "NAME_ALREADY_EXISTS" };
+
+    const resolvedInternalPort = internalPort ?? DEFAULT_PORT_START;
+    const resolvedExternalPort = externalPort ?? (await getFirstAvailablePort());
 
     const id = name;
     const imageName = `ms-${id}:latest`;
     const containerName = `ms-${id}`;
     const now = new Date().toISOString();
 
-    const record = newRecord({ id, name, language, now, containerName, imageName, port });
-    
-    try {   
-        // Crear la carpeta en el backend
-        await createMicroserviceDirectory({ id, language, sourceCode, port, createdAt: now });
-        
-        const containerId = await helper.buildAndStartMicroservice({ id, language, sourceCode, port, imageName, containerName });
-        const updatedRecord = await helper.markMicroserviceAsUp({ id, record, containerId, containerName, imageName });
-        
-        // Agregar el servicio al listado
-        await registry.appendService(record);
+    const record = newRecord({
+        id,
+        name,
+        language,
+        now,
+        containerName,
+        imageName,
+        internalPort: resolvedInternalPort,
+        externalPort: resolvedExternalPort,
+        description,
+    });
 
-        return { ok: true, rec:updatedRecord };
-    
+    try {
+        await createMicroserviceDirectory({
+            id,
+            language,
+            sourceCode,
+            port: resolvedInternalPort,
+            createdAt: now,
+        });
+
+        const containerId = await helper.buildAndStartMicroservice({
+            id,
+            language,
+            sourceCode,
+            internalPort: resolvedInternalPort,
+            externalPort: resolvedExternalPort,
+            imageName,
+            containerName,
+        });
+
+        const updatedRecord = await helper.markMicroserviceAsUp({
+            id,
+            record,
+            containerId,
+            containerName,
+            imageName,
+        });
+
+        await registry.appendService(updatedRecord);
+
+        return { ok: true, rec: updatedRecord };
     } catch (err) {
-        await dockerService.stopAndRemoveContainer(containerName).catch(() => {});
-        await dockerService.removeImage(imageName).catch(() => {});
-        await removeMicroserviceDirectory(id).catch(() => {});
-                
+        console.error("❌ EXPLOTÓ CREATING SERVICE:", err);
+        await dockerService.stopAndRemoveContainer(containerName).catch(() => { });
+        await dockerService.removeImage(imageName).catch(() => { });
+        await removeMicroserviceDirectory(id).catch(() => { });
+
         const message = err instanceof Error ? err.message : String(err);
-        return { ok: false, reason:"PORT_ALREADY_EXISTS", port: Number(message.split(":")[1])};
+
+        if (message.startsWith("PORT_ALREADY_EXISTS:")) {
+            const parsedPort = Number(message.split(":")[1]);
+            return {
+                ok: false,
+                reason: "PORT_ALREADY_EXISTS",
+                externalPort: Number.isFinite(parsedPort) ? parsedPort : resolvedExternalPort,
+                internalPort: Number.isFinite(parsedPort) ? parsedPort : resolvedExternalPort,
+            };
+        }
+
+        return { ok: false, reason: "CREATE_FAILED" };
     }
 }
 
@@ -56,8 +109,8 @@ export async function listMicroservices() {
 
         const runtimeStatus = match?.status ?? "stopped"; // Caso donde no esté en la lista de contenedores
         const status = runtimeStatus === "running" ? "UP"
-                     : !match                      ? "ERROR"
-                     : "DOWN";
+            : !match ? "ERROR"
+                : "DOWN";
 
         return {
             ...service,
@@ -68,7 +121,7 @@ export async function listMicroservices() {
 
 export async function getMicroserviceById(id: string) {
     const service = await registry.findServiceById(id);
-    
+
     if (!service) return null;
 
     const containers = await dockerService.getContainerList();
@@ -76,8 +129,8 @@ export async function getMicroserviceById(id: string) {
 
     const runtimeStatus = match?.status ?? "stopped";
     const status = runtimeStatus === "running" ? "UP"
-                 : !match                      ? "ERROR"
-                 : "DOWN";
+        : !match ? "ERROR"
+            : "DOWN";
 
     return {
         ...service,
@@ -85,7 +138,7 @@ export async function getMicroserviceById(id: string) {
     };
 }
 
-export async function deleteMicroservice(id: string): Promise<boolean|null> {
+export async function deleteMicroservice(id: string): Promise<boolean | null> {
     const service = await registry.findServiceById(id);
     if (!service) return null;
 
@@ -107,13 +160,24 @@ export async function startMicroservice(id: string) {
 
     await dockerService.startExistingContainer(service.container.containerName);
 
-    await registry.updateService(id, {
-        metadata: { ...service.metadata, status: "UP", runtimeStatus: "running", updatedAt: new Date().toISOString() },
-        container: {...service.container, status: "running" },
+    const updatedRecord: ServiceRecord = {
+        ...service,
+        metadata: {
+            ...service.metadata,
+            status: "UP",
+            runtimeStatus: "running",
+            updatedAt: new Date().toISOString(),
+        },
+        container: {
+            ...service.container,
+            status: "running",
+        },
+    };
 
-    });
+    await registry.updateService(id, updatedRecord);
 
-    return { id, status: "UP", runtimeStatus: "running" };
+
+    return { id, status: "UP", runtimeStatus: "running", service: updatedRecord };
 }
 
 export async function stopMicroservice(id: string) {
@@ -122,12 +186,23 @@ export async function stopMicroservice(id: string) {
 
     await dockerService.stopExistingContainer(service.container.containerName);
 
-    await registry.updateService(id, {
-        metadata: { ...service.metadata, status: "DOWN", runtimeStatus: "stopped", updatedAt: new Date().toISOString() },
-        container: {...service.container, status: "stopped" },
-    });
+    const updatedRecord: ServiceRecord = {
+        ...service,
+        metadata: {
+            ...service.metadata,
+            status: "DOWN",
+            runtimeStatus: "stopped",
+            updatedAt: new Date().toISOString(),
+        },
+        container: {
+            ...service.container,
+            status: "stopped",
+        },
+    };
 
-    return { id, status: "DOWN", runtimeStatus: "stopped" };
+    await registry.updateService(id, updatedRecord);
+
+    return { id, status: "DOWN", runtimeStatus: "stopped", service: updatedRecord };
 }
 
 export async function restartMicroservice(id: string) {
@@ -136,11 +211,22 @@ export async function restartMicroservice(id: string) {
 
     await dockerService.restartExistingContainer(service.container.containerName);
 
-    await registry.updateService(id, {
-        metadata: { ...service.metadata, status: "UP", runtimeStatus: "running", updatedAt: new Date().toISOString() },
-        container: {...service.container, status: "restarting" },
+    const updatedRecord: ServiceRecord = {
+        ...service,
+        metadata: {
+            ...service.metadata,
+            status: "UP",
+            runtimeStatus: "running",
+            updatedAt: new Date().toISOString(),
+        },
+        container: {
+            ...service.container,
+            status: "running",
+        },
+    };
 
-    });
+    await registry.updateService(id, updatedRecord);
 
-    return { id, status: "UP", runtimeStatus: "running" };
+
+    return { id, status: "UP", runtimeStatus: "running", service: updatedRecord };
 }

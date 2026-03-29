@@ -106,4 +106,5 @@
   z-index: 1;
   min-height: 100vh;
   padding-bottom: 120px; /* navbar fija de ~76px + margen */
+  display: flex;
 }

@@ -90,9 +90,19 @@
   flex-shrink: 0;
 }
 
-.statusDotRunning { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.6); }
-.statusDotPaused  { background: #facc15; box-shadow: 0 0 6px rgba(250,204,21,0.6); }
-.statusDotStopped { background: rgba(255,255,255,0.25); }
+.statusDotRunning {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+}
+
+.statusDotPaused {
+  background: #facc15;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
+}
+
+.statusDotStopped {
+  background: rgba(255, 255, 255, 0.25);
+}
 
 .cardName {
   font-size: 13px;
@@ -103,6 +113,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  border-bottom: 1px solid #FFFFFF22;
+  padding: .4rem .6rem;
+  border-radius: 8px;
 }
 
 .cardPort {
@@ -176,8 +189,13 @@
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.metricFillCpu { background: linear-gradient(90deg, #818cf8, #6366f1); }
-.metricFillRam { background: linear-gradient(90deg, #34d399, #10b981); }
+.metricFillCpu {
+  background: linear-gradient(90deg, #818cf8, #6366f1);
+}
+
+.metricFillRam {
+  background: linear-gradient(90deg, #34d399, #10b981);
+}
 
 .cardFooter {
   display: flex;
@@ -217,18 +235,21 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%);
   animation: shimmer 1.4s infinite;
 }
 
 @keyframes shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%);  }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* ---------- Error state ----------------------------------- */
@@ -286,7 +307,7 @@
   opacity: 0;
   transition:
     transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity   0.25s ease;
+    opacity 0.25s ease;
 }
 
 .modalVisible {
@@ -431,8 +452,15 @@
 }
 
 @keyframes dropIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)   scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .langOption {
@@ -471,8 +499,13 @@
   display: inline-block;
 }
 
-.langDot[data-lang="python"] { background: #3b82f6; }
-.langDot[data-lang="node"]   { background: #22c55e; }
+.langDot[data-lang="python"] {
+  background: #3b82f6;
+}
+
+.langDot[data-lang="node"] {
+  background: #22c55e;
+}
 
 /* ── Editor de código ── */
 .editorWrapper {
@@ -510,7 +543,7 @@
 /* ── Footer: dos columnas ── */
 .modalFooter {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   padding: 16px 20px 20px;
   border-top: 1px solid rgba(160, 100, 255, 0.12);
   gap: 0;
@@ -528,12 +561,14 @@
 
 /* Derecha: puerto + checkbox + botones */
 .footerRight {
-  display: flex;
-  flex-direction: column;
+  min-height: 100%;
   gap: 10px;
   padding-left: 15px;
-  align-items: flex-start;
+  padding-top: 1rem;
   min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
 }
 
 /* ── Filas de recursos ── */
@@ -549,11 +584,12 @@
   color: rgba(255, 255, 255, 0.5);
   font-family: -apple-system, "SF Pro Rounded", sans-serif;
   white-space: nowrap;
-  width: auto;
+  width: 68px;
   flex-shrink: 0;
 }
 
 .resourceValue {
+  width: 52px;
   font-size: 13px;
   font-weight: 600;
   color: rgba(180, 130, 255, 0.95);
@@ -572,13 +608,11 @@
   border-radius: 99px;
   outline: none;
   cursor: pointer;
-  background: linear-gradient(
-    to right,
-    rgba(140, 80, 220, 0.85) 0%,
-    rgba(140, 80, 220, 0.85) var(--pct, 50%),
-    rgba(255, 255, 255, 0.12) var(--pct, 50%),
-    rgba(255, 255, 255, 0.12) 100%
-  );
+  background: linear-gradient(to right,
+      rgba(140, 80, 220, 0.85) 0%,
+      rgba(140, 80, 220, 0.85) var(--pct, 50%),
+      rgba(255, 255, 255, 0.12) var(--pct, 50%),
+      rgba(255, 255, 255, 0.12) 100%);
   transition: background 0.1s ease;
 }
 
@@ -616,6 +650,7 @@
   gap: 10px;
   width: 100%;
   justify-content: flex-start;
+  margin-bottom: 1rem;
 }
 
 .portInput {
@@ -633,10 +668,14 @@
   -webkit-appearance: none;
   margin: 0;
 }
-.portInput[type=number] { -moz-appearance: textfield; }
+
+.portInput[type=number] {
+  -moz-appearance: textfield;
+}
 
 /* ── Checkbox ── */
 .checkRow {
+  margin-top: 1rem;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -684,9 +723,11 @@
 
 /* ── Botones ── */
 .btnGroup {
+  flex: 1;
+  width: 100%;
   display: flex;
   gap: 8px;
-  margin-top: 4px;
+  justify-content: space-between;
 }
 
 .btnSecondary {
@@ -731,4 +772,61 @@
 .btnPrimary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.descriptionWrapper {
+  border-radius: 12px;
+  border: 1px solid rgba(160, 100, 255, 0.25);
+  overflow: hidden;
+  background: rgba(12, 10, 20, 0.8);
+}
+
+.separator {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  height: 100%;
+}
+
+.cardBusy {
+  opacity: 0.9;
+}
+
+.cardBtn:disabled,
+.cardFooterBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cardBtn:disabled:hover,
+.cardFooterBtn:disabled:hover {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  transform: none;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.6px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.emptyBox {
+  grid-column: 1 / -1;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-family: -apple-system, "SF Pro Rounded", sans-serif;
+  text-align: center;
 }

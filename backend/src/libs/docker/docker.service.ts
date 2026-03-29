@@ -25,7 +25,7 @@ export async function getDockerVersion() {
 }
 
 //  Probando construir la imagen Docker desde el sourceCode en memoria
-export async function buildImageFromSource(params: { serviceId: string; language: ServicesLanguage; sourceCode: string; port: number; imageName: string; }): Promise<void> {
+export async function buildImageFromSource(params: { serviceId: string; language: ServicesLanguage; sourceCode: string; internalPort: number; imageName: string; }): Promise<void> {
     const docker = getDocker();
     const { imageName } = params;
 
@@ -35,10 +35,23 @@ export async function buildImageFromSource(params: { serviceId: string; language
 
     // Espera aquí hasta que Docker termine de construir la imagen. Si falla, lanza error
     await new Promise<void>((resolve, reject) => {
-        docker.modem.followProgress(stream, (err) => {
-            if (err) reject(err);
-            else resolve();
-        });
+        docker.modem.followProgress(
+            stream,
+            (err, res) => {
+                if (err) return reject(err);
+
+                const hasError = res?.some(item => item.errorDetail);
+                if (hasError) {
+                    const errorMsg = res.find(item => item.errorDetail)?.error || "Docker Build Error";
+                    return reject(new Error(errorMsg));
+                }
+                resolve();
+            },
+            (event) => {
+                // Opcional: ver el progreso en tu consola del backend
+                if (event.stream) console.log("Docker:", event.stream.trim());
+            }
+        );
     });
 
     // Limpiar archivos temporales
@@ -86,7 +99,7 @@ async function getOneContainerMetrics(containerRef: { containerId: string; conta
     }
 }
 
-export async function getContainersMetricsSnapshot({containerName, containerNames, onlyRunning}:StatsQuery): Promise<ContainersMetricsResponse> {
+export async function getContainersMetricsSnapshot({ containerName, containerNames, onlyRunning }: StatsQuery): Promise<ContainersMetricsResponse> {
     const allContainers = await getContainerList();
 
     let selected = allContainers;

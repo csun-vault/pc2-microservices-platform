@@ -16,17 +16,17 @@ type IdParams = { id: string };
 export const createService: Controller = async (req, res) => {
     const body = validateCreateServiceBody(req.body);
     const result = await createMicroservice(body);
+    console.log(result)
 
     if (!result.ok) {
         if (result.reason === "NAME_ALREADY_EXISTS")
             throw new HTTPError({ statusCode: 409, type: "CONFLICT", message: `Ya existe un microservicio con el nombre '${body.name}'`,});
         
         if (result.reason === "PORT_ALREADY_EXISTS")
-            throw new HTTPError({ statusCode: 409, type: "CONFLICT", message: `Ya existe un microservicio con el puerto '${result.port}'`,});
-    
+            throw new HTTPError({ statusCode: 409, type: "CONFLICT", message: `Ya existe un microservicio con el puerto '${result.externalPort}'`,});
     }
     
-    return res.status(201).json({ ok: true, data: { service: result.rec} });
+    return res.status(201).json({ ok: true, data: { service: result.rec } });
 };
 
 export const listServices: Controller = async (_req, res) => {
@@ -46,6 +46,7 @@ export const getServiceById: Controller<IdParams> = async (req, res) => {
 
 export const deleteService: Controller<IdParams> = async (req, res) => {
     const { id } = req.params;
+    console.log(id)
     const deleted = await deleteMicroservice(id);
 
     if (!deleted)

@@ -3,8 +3,8 @@ import * as path from "path";
 import type { ServicesLanguage } from "@shared/domain.types";
 import { DOCKERFILES, SOURCE_FILENAME } from "./docker.constants";
 
-export async function createBuildContext(params: {serviceId: string; language: ServicesLanguage; sourceCode: string; port: number }) {
-    const { serviceId, language, sourceCode, port } = params;
+export async function createBuildContext(params: {serviceId: string; language: ServicesLanguage; sourceCode: string; internalPort: number }) {
+    const { serviceId, language, sourceCode, internalPort } = params;
 
     const buildDir = path.join("/tmp", `ms-build-${serviceId}`);
 
@@ -12,7 +12,7 @@ export async function createBuildContext(params: {serviceId: string; language: S
 
     await fs.writeFile(
         path.join(buildDir, "Dockerfile"),
-        DOCKERFILES[language](port),
+        DOCKERFILES[language](internalPort),
         "utf-8"
     );
 

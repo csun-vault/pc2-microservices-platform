@@ -23,7 +23,7 @@ export const getSummary : Controller = async (req, res) => {
 export const getStats: Controller = async (req, res) => {
   const query = validateStatsQuery(req.query);
 
-  const stats = await ds.getContainersMetricsSnapshot({ containerName: query.containerName!, containerNames: query.containerNames!, onlyRunning: query.onlyRunning!});
+  const stats = await ds.getContainersMetricsSnapshot(query);
 
   if (query.containerName && stats.items.length === 0) 
     throw new HTTPError({statusCode: 404, type: "NOT_FOUND", message: `No existe un contenedor con nombre '${query.containerName}'`});

@@ -1,23 +1,6 @@
 
 import { ServicesLanguage } from "@shared/domain.types";
 
-export interface ContainerMetricUsage {
-  containerId: string;
-  containerName: string;
-  cpu: number;
-  ram: number;
-  ts: number;
-  status?: string;
-}
-export interface ContainersMetricsResponse {
-  scope: "single" | "many" | "all";
-  items: ContainerMetricUsage[];
-  summary: {
-    cpuAvg: number;
-    ramAvg: number;
-    containers: number;
-  };
-}
 
 // Nombre del archivo según el lenguaje
 export const SOURCE_FILENAME: Record<ServicesLanguage, string> = {
