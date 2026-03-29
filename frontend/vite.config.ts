@@ -1,21 +1,19 @@
 import { defineConfig } from "vite";
-import srvg from "vite-plugin-svgr";
+import react from "@vitejs/plugin-react";
+import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
       appType: "spa",
       server: {
+            host: "0.0.0.0",
+            port: 5173,
             proxy: {
-                  '/api': {
-                        target: 'http://localhost:3000',
+                  "/api": {
+                        target: "http://backend:3000",
                         changeOrigin: true,
-                        rewrite: (path) => path.replace(/^\/api/, '')
+                        rewrite: (path) => path.replace(/^\/api/, ""),
                   },
             },
-            host: true,
-            port: 5173,
-            strictPort: true
       },
-      plugins: [srvg()]
-
-
+      plugins: [react(), svgr()],
 });

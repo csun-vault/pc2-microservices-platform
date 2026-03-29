@@ -10,7 +10,7 @@
       de los tipos definidos aquí.
    ============================================================ */
 
-const BASE_URL = import.meta.env.VITE_BASE_URL // ← cambia a tu URL real
+const BASE_URL = import.meta.env.VITE_API_URL
 console.log(BASE_URL);
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
