@@ -9,6 +9,7 @@ import {
     startMicroservice,
     stopMicroservice,
     restartMicroservice,
+    getMicroserviceSource,
 } from "./microservices.service";
 
 type IdParams = { id: string };
@@ -83,4 +84,42 @@ export const restartService: Controller<IdParams> = async (req, res) => {
         throw new HTTPError({statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'`});
 
     return res.json({ ok: true, data: result });
+};
+
+export const getSourceCode: Controller<IdParams> = async (req, res) => {
+    const { id } = req.params;
+    const result = await getMicroserviceSource(id);
+
+    if (!result) 
+        throw new HTTPError({statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'`});
+
+    return res.json({ ok: true, data: result });
+};
+
+export const invokeService: Controller<IdParams> = async (req, res) => {
+    const { id } = req.params;
+    const service = await getMicroserviceById(id);
+ 
+    if (!service)
+        throw new HTTPError({ statusCode: 404, type: "NOT_FOUND", message: `No existe un microservicio con id '${id}'` });
+ 
+    const { method = "GET", path = "/", query, body } = req.body as {
+        method: "GET" | "POST";
+        path?:  string;
+        query?: string;
+        body?:  string;
+    };
+ 
+    const url = `http://localhost:${service.ports.external}${path}${query ? `?${query}` : ""}`;
+ 
+    const upstream = await fetch(url, method === "POST"
+        ? { method: "POST", headers: { "Content-Type": "application/json" }, body: body ?? "" }
+        : { method: "GET" }
+    );
+ 
+    const contentType = upstream.headers.get("content-type") ?? "";
+    const isJson = contentType.includes("application/json");
+    const data = isJson ? await upstream.json() : await upstream.text();
+ 
+    return res.status(upstream.status).json({ ok: upstream.ok, data });
 };
