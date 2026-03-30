@@ -3,8 +3,7 @@
 `Plataforma de microservicios basada en Docker que permite la creación, despliegue y administración dinámica de servicios independientes mediante un dashboard web.`
 
 ---
-
-## Tabla de contenidos
+## Tabla de contenidos.                       | 🟥 [[Link al video]](https://youtu.be/PxIzBMW_tOw) |
 
 - [UI/UX](#uiux)
 - [Cómo ejecutar el proyecto](#cómo-ejecutar-el-proyecto)
@@ -414,4 +413,3 @@ server.listen(4080, () => console.log("Auth Checker on 4080"));
 
 **Esperado**: `valid`
 
-[![Ver video](https://i.ytimg.com)](https://youtu.be/PxIzBMW_tOw)
