@@ -232,3 +232,124 @@ Todas las rutas (excepto `/health`) están protegidas por el middleware `dockerG
 - El frontend corre en **modo desarrollo** dentro de Docker (`vite --host 0.0.0.0`), lo que habilita HMR durante el desarrollo.
 
 ---
+
+## Ejemplos
+
+**Convertor de temperatura de grados Celsius a Fahrenheit y Kelvin**
+const http = require('http');
+const url = require('url');
+
+const server = http.createServer((req, res) => {
+    const parsedUrl = url.parse(req.url, true);
+    const query = parsedUrl.query;
+    const celsius = parseFloat(query.celsius);
+
+    res.setHeader('Content-Type', 'application/json');
+
+    if (isNaN(celsius)) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({ ok: false, message: "Ingresa un número en 'celsius'" }));
+    }
+
+    const fahrenheit = (celsius * 9/5) + 32;
+    const kelvin = celsius + 273.15;
+
+    res.statusCode = 200;
+    res.end(JSON.stringify({
+        ok: true,
+        original: celsius + "°C",
+        fahrenheit: fahrenheit.toFixed(2) + "°F",
+        kelvin: kelvin.toFixed(2) + "K"
+    }));
+});
+
+server.listen(4060, () => {
+    console.log('Conversor Node corriendo en http://localhost:4060');
+});
+
+**Prueba**: Celsius = 0 
+
+**Servidor de rutas (Python)**
+Microservicio con múltiples rutas: saludo personalizado y consulta de usuario por ID.
+
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+import json
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        query = parse_qs(parsed_url.query)
+
+        # Route: /hello?name=Ion
+        if path == "/hello":
+            name = query.get("name", ["Guest"])[0]
+            response = {
+                "ok": True,
+                "route": "/hello",
+                "queryParams": { "name": name },
+                "message": f"Hello, {name}"
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode("utf-8"))
+            return
+
+        # Route: /users/:id
+        if path.startswith("/users/"):
+            parts = path.strip("/").split("/")
+            if len(parts) == 2:
+                user_id = parts[1]
+                response = {
+                    "ok": True,
+                    "route": "/users/:id",
+                    "urlParams": { "id": user_id }
+                }
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+                return
+
+        # Fallback 404
+        self.send_response(404)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps({ "ok": False, "message": "Route not found" }).encode("utf-8"))
+
+HTTPServer(("0.0.0.0", 4002), Handler).serve_forever()
+
+**Prueba** name = Ion 
+
+**Validador de contraseñas**
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+    if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            const data = JSON.parse(body);
+            const password = data.password;
+            const minLen = data.minLen || 8;
+            const esValido = password && password.length >= minLen;
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                ok: true,
+                valid: esValido,
+                length: password ? password.length : 0
+            }));
+        });
+    } else {
+        res.writeHead(405);
+        res.end();
+    }
+});
+
+server.listen(4080, () => console.log('Auth Checker on 4080'));
+
+**Prueba**: "password": "MiPasswordSegura123",
+            "minLen": 10
