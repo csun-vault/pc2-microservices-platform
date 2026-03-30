@@ -1,5 +1,5 @@
-
 # Microservices Platform
+
 `Plataforma de microservicios basada en Docker que permite la creación, despliegue y administración dinámica de servicios independientes mediante un dashboard web.`
 
 ---
@@ -39,33 +39,33 @@
 
 ### ⌨️ Backend
 
-| Capa | Tecnología |
-|---|---|
-| Runtime | Node.js |
-| Framework | Express 5 |
-| Integración Docker | Dockerode |
-| Lenguaje | TypeScript 5 |
+| Capa                 | Tecnología       |
+| -------------------- | ---------------- |
+| Runtime              | Node.js          |
+| Framework            | Express 5        |
+| Integración Docker   | Dockerode        |
+| Lenguaje             | TypeScript 5     |
 | Runner de desarrollo | tsx (modo watch) |
-| Build | tsc + tsc-alias |
+| Build                | tsc + tsc-alias  |
 
 ### 🖥️ Frontend
 
-| Capa | Tecnología |
-|---|---|
-| Framework | React 19 |
-| Build tool | Vite 7 |
-| Lenguaje | TypeScript 5 |
-| Enrutamiento | React Router v7 |
+| Capa             | Tecnología                         |
+| ---------------- | ---------------------------------- |
+| Framework        | React 19                           |
+| Build tool       | Vite 7                             |
+| Lenguaje         | TypeScript 5                       |
+| Enrutamiento     | React Router v7                    |
 | Editor de código | react-simple-code-editor + Prismjs |
-| SVGs | vite-plugin-svgr |
-| Estilos | CSS Modules |
+| SVGs             | vite-plugin-svgr                   |
+| Estilos          | CSS Modules                        |
 
 ### 🏢 Infraestructura
 
-| Capa | Tecnología |
-|---|---|
+| Capa         | Tecnología              |
+| ------------ | ----------------------- |
 | Contenedores | Docker + Docker Compose |
-| Orquestación | Docker Compose v2 |
+| Orquestación | Docker Compose v2       |
 
 ---
 
@@ -159,9 +159,9 @@ cd pc2-microservices-platform
 docker compose up -d --build
 ```
 
-| Servicio | URL |
-|---|---|
-| Frontend | http://localhost:5173 |
+| Servicio    | URL                   |
+| ----------- | --------------------- |
+| Frontend    | http://localhost:5173 |
 | Backend API | http://localhost:3000 |
 
 ### ¿Cómo acceder al frontend?
@@ -177,7 +177,6 @@ Ve a la sección Containers
 Busca el stack pc2-microservices-platform
 Haz click en el link 5173:5173 del contenedor frontend.
 
-
 ### En local (desarrollo)
 
 **Backend**
@@ -187,6 +186,7 @@ cd backend
 npm install
 npm run dev
 ```
+
 **Frontend** (en otra terminal)
 
 ```bash
@@ -194,24 +194,25 @@ cd frontend
 npm install
 npm run dev
 ```
+
 ---
 
 ## Variables de entorno
 
 ### Backend (`backend/.env`)
 
-| Variable | Descripción | Ejemplo |
-|---|---|---|
-| `PORT` | Puerto en el que escucha el servidor | `3000` |
-| `HOST` | Host al que se enlaza el servidor | `0.0.0.0` |
-| `PUBLIC_HOST` | Hostname público para URLs de contenedores | `localhost` |
-| `DOCKER_ENV` | Activa el modo Docker (usa `host.docker.internal`) | `true` |
+| Variable      | Descripción                                        | Ejemplo     |
+| ------------- | -------------------------------------------------- | ----------- |
+| `PORT`        | Puerto en el que escucha el servidor               | `3000`      |
+| `HOST`        | Host al que se enlaza el servidor                  | `0.0.0.0`   |
+| `PUBLIC_HOST` | Hostname público para URLs de contenedores         | `localhost` |
+| `DOCKER_ENV`  | Activa el modo Docker (usa `host.docker.internal`) | `true`      |
 
 ### Frontend (`frontend/.env.local`)
 
-| Variable | Descripción | Ejemplo |
-|---|---|---|
-| `VITE_API_URL` | URL base para las llamadas al backend | `/api` |
+| Variable       | Descripción                           | Ejemplo |
+| -------------- | ------------------------------------- | ------- |
+| `VITE_API_URL` | URL base para las llamadas al backend | `/api`  |
 
 ---
 
@@ -221,34 +222,34 @@ Todas las rutas (excepto `/health`) están protegidas por el middleware `dockerG
 
 ### Health
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/health` | Retorna el estado del servidor y del motor Docker |
+| Método | Endpoint  | Descripción                                       |
+| ------ | --------- | ------------------------------------------------- |
+| `GET`  | `/health` | Retorna el estado del servidor y del motor Docker |
 
 ### Microservicios
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/services` | Lista todos los microservicios registrados |
-| `POST` | `/services` | Crea un nuevo microservicio en un contenedor |
-| `GET` | `/services/:id` | Obtiene la información de un microservicio por ID |
-| `POST` | `/services/:id/start` | Inicia un microservicio detenido |
-| `POST` | `/services/:id/stop` | Detiene un microservicio en ejecución |
-| `POST` | `/services/:id/restart` | Reinicia un microservicio |
-| `DELETE` | `/services/:id/delete` | Elimina un microservicio y su contenedor |
-| `GET` | `/services/:id/source` | Retorna el código fuente del microservicio |
-| `POST` | `/services/:id/invoke` | Invoca el microservicio como proxy (soporta path, query y body personalizados) |
-| `GET` | `/services/:id/logs` | Retorna los logs del contenedor |
+| Método   | Endpoint                | Descripción                                                                    |
+| -------- | ----------------------- | ------------------------------------------------------------------------------ |
+| `GET`    | `/services`             | Lista todos los microservicios registrados                                     |
+| `POST`   | `/services`             | Crea un nuevo microservicio en un contenedor                                   |
+| `GET`    | `/services/:id`         | Obtiene la información de un microservicio por ID                              |
+| `POST`   | `/services/:id/start`   | Inicia un microservicio detenido                                               |
+| `POST`   | `/services/:id/stop`    | Detiene un microservicio en ejecución                                          |
+| `POST`   | `/services/:id/restart` | Reinicia un microservicio                                                      |
+| `DELETE` | `/services/:id/delete`  | Elimina un microservicio y su contenedor                                       |
+| `GET`    | `/services/:id/source`  | Retorna el código fuente del microservicio                                     |
+| `POST`   | `/services/:id/invoke`  | Invoca el microservicio como proxy (soporta path, query y body personalizados) |
+| `GET`    | `/services/:id/logs`    | Retorna los logs del contenedor                                                |
 
 ### Docker
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| `GET` | `/docker/version` | Versión del motor Docker |
-| `GET` | `/docker/containers` | Lista todos los contenedores |
-| `GET` | `/docker/summary` | Estadísticas generales del motor Docker |
-| `GET` | `/docker/stats` | Métricas de contenedores (filtrables por `containerName` / `containerNames`) |
-| `GET` | `/docker/logs/:containerName` | Logs de un contenedor específico |
+| Método | Endpoint                      | Descripción                                                                  |
+| ------ | ----------------------------- | ---------------------------------------------------------------------------- |
+| `GET`  | `/docker/version`             | Versión del motor Docker                                                     |
+| `GET`  | `/docker/containers`          | Lista todos los contenedores                                                 |
+| `GET`  | `/docker/summary`             | Estadísticas generales del motor Docker                                      |
+| `GET`  | `/docker/stats`               | Métricas de contenedores (filtrables por `containerName` / `containerNames`) |
+| `GET`  | `/docker/logs/:containerName` | Logs de un contenedor específico                                             |
 
 ---
 
@@ -266,35 +267,39 @@ Todas las rutas (excepto `/health`) están protegidas por el middleware `dockerG
 **Convertor de temperatura de grados Celsius a Fahrenheit y Kelvin**
 
 ```js
-const http = require('http');
-const url = require('url');
+const http = require("http");
+const url = require("url");
 
 const server = http.createServer((req, res) => {
-    const parsedUrl = url.parse(req.url, true);
-    const query = parsedUrl.query;
-    const celsius = parseFloat(query.celsius);
+  const parsedUrl = url.parse(req.url, true);
+  const query = parsedUrl.query;
+  const celsius = parseFloat(query.celsius);
 
-    res.setHeader('Content-Type', 'application/json');
+  res.setHeader("Content-Type", "application/json");
 
-    if (isNaN(celsius)) {
-        res.statusCode = 400;
-        return res.end(JSON.stringify({ ok: false, message: "Ingresa un número en 'celsius'" }));
-    }
+  if (isNaN(celsius)) {
+    res.statusCode = 400;
+    return res.end(
+      JSON.stringify({ ok: false, message: "Ingresa un número en 'celsius'" }),
+    );
+  }
 
-    const fahrenheit = (celsius * 9/5) + 32;
-    const kelvin = celsius + 273.15;
+  const fahrenheit = (celsius * 9) / 5 + 32;
+  const kelvin = celsius + 273.15;
 
-    res.statusCode = 200;
-    res.end(JSON.stringify({
-        ok: true,
-        original: celsius + "°C",
-        fahrenheit: fahrenheit.toFixed(2) + "°F",
-        kelvin: kelvin.toFixed(2) + "K"
-    }));
+  res.statusCode = 200;
+  res.end(
+    JSON.stringify({
+      ok: true,
+      original: celsius + "°C",
+      fahrenheit: fahrenheit.toFixed(2) + "°F",
+      kelvin: kelvin.toFixed(2) + "K",
+    }),
+  );
 });
 
 server.listen(4060, () => {
-    console.log('Conversor Node corriendo en http://localhost:4060');
+  console.log("Conversor Node corriendo en http://localhost:4060");
 });
 ```
 
@@ -359,49 +364,54 @@ HTTPServer(("0.0.0.0", 4002), Handler).serve_forever()
 
 **Prueba**: `name=Ion`  
 **Esperado en /hello?name=ion**: `Hola ion`  
-**Esperado en /id/123**: `id: 123`  
+**Esperado en /id/123**: `id: 123`
 
 ---
 
 **Validador de contraseñas**
 
 ```js
-const http = require('http');
+const http = require("http");
 
 const server = http.createServer((req, res) => {
-    if (req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => { body += chunk.toString(); });
-        req.on('end', () => {
-            const data = JSON.parse(body);
-            const password = data.password;
-            const minLen = data.minLen || 8;
-            const esValido = password && password.length >= minLen;
+  if (req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk.toString();
+    });
+    req.on("end", () => {
+      const data = JSON.parse(body);
+      const password = data.password;
+      const minLen = data.minLen || 8;
+      const esValido = password && password.length >= minLen;
 
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-                ok: true,
-                valid: esValido,
-                length: password ? password.length : 0
-            }));
-        });
-    } else {
-        res.writeHead(405);
-        res.end();
-    }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          valid: esValido,
+          length: password ? password.length : 0,
+        }),
+      );
+    });
+  } else {
+    res.writeHead(405);
+    res.end();
+  }
 });
 
-server.listen(4080, () => console.log('Auth Checker on 4080'));
+server.listen(4080, () => console.log("Auth Checker on 4080"));
 ```
 
-**Prueba**:  
+**Prueba**:
+
 ```json
-{ 
-  "password": "MiPasswordSegura123", 
-  "minLen": 10 
+{
+  "password": "MiPasswordSegura123",
+  "minLen": 10
 }
-```  
+```
+
 **Esperado**: `valid`
 
-
-[![Ver video](https://img.youtube.com)](https://youtu.be/PxIzBMW_tOw)
+[![Ver video](https://i.ytimg.com)](https://youtu.be/PxIzBMW_tOw)
