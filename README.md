@@ -236,6 +236,8 @@ Todas las rutas (excepto `/health`) están protegidas por el middleware `dockerG
 ## Ejemplos
 
 **Convertor de temperatura de grados Celsius a Fahrenheit y Kelvin**
+
+```js
 const http = require('http');
 const url = require('url');
 
@@ -266,12 +268,14 @@ const server = http.createServer((req, res) => {
 server.listen(4060, () => {
     console.log('Conversor Node corriendo en http://localhost:4060');
 });
+```
 
-**Prueba**: Celsius = 0 
+**Prueba**: `celsius=0`
 
 **Servidor de rutas (Python)**
 Microservicio con múltiples rutas: saludo personalizado y consulta de usuario por ID.
 
+```python
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import json
@@ -320,10 +324,13 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps({ "ok": False, "message": "Route not found" }).encode("utf-8"))
 
 HTTPServer(("0.0.0.0", 4002), Handler).serve_forever()
+```
 
-**Prueba** name = Ion 
+**Prueba**: `name=Ion`
 
 **Validador de contraseñas**
+
+```js
 const http = require('http');
 
 const server = http.createServer((req, res) => {
@@ -350,6 +357,9 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(4080, () => console.log('Auth Checker on 4080'));
+```
 
-**Prueba**: "password": "MiPasswordSegura123",
-            "minLen": 10
+**Prueba**:
+```json
+{ "password": "MiPasswordSegura123", "minLen": 10 }
+```
