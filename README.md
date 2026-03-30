@@ -1,15 +1,43 @@
-# PC2 — Microservices Platform
-Plataforma basada en microservicios y Docker que permite la creación, despliegue y administración dinámica de servicios independientes mediante un dashboard web.
+
+# Microservices Platform
+`Plataforma de microservicios basada en Docker que permite la creación, despliegue y administración dinámica de servicios independientes mediante un dashboard web.`
+
+---
+
+## Tabla de contenidos
+
+- [UI/UX](#uiux)
+- [Cómo ejecutar el proyecto](#cómo-ejecutar-el-proyecto)
+  - [Requisitos previos](#requisitos-previos)
+  - [Con Docker Compose (recomendado)](#con-docker-compose-recomendado)
+  - [En local (desarrollo)](#en-local-desarrollo)
+
+- [Stack tecnológico](#stack-tecnológico)
+  - [Backend](#backend)
+  - [Frontend](#frontend)
+  - [Infraestructura](#infraestructura)
+- [Diagrama de Arquitectura](#diagrama-de-arquitectura)
+- [Referencia de la API](#referencia-de-la-api)
+  - [Health](#health)
+  - [Microservicios](#microservicios)
+  - [Docker](#docker)
+- [Notas sobre Docker](#notas-sobre-docker)
+- [Ejemplos](#ejemplos)
+  - [Conversor de temperatura de grados Celsius a Fahrenheit y Kelvin](#convertor-de-temperatura-de-grados-celsius-a-fahrenheit-y-kelvin)
+  - [Servidor de rutas (Python)](#servidor-de-rutas-python)
+  - [Validador de contraseñas](#validador-de-contraseñas)
+
+---
 
 ## UI/UX
 
-<img width="1876" height="708" alt="image" src="https://github.com/user-attachments/assets/473bbd2c-f2f9-400b-a288-9f31694159ca" />
+<img width="1239" height="717" alt="image" src="https://github.com/user-attachments/assets/1d568fc9-7dd3-4269-8da1-2399e7561be8" />
 
 ---
 
 ## Stack tecnológico
 
-### Backend
+### ⌨️ Backend
 
 | Capa | Tecnología |
 |---|---|
@@ -20,7 +48,7 @@ Plataforma basada en microservicios y Docker que permite la creación, despliegu
 | Runner de desarrollo | tsx (modo watch) |
 | Build | tsc + tsc-alias |
 
-### Frontend
+### 🖥️ Frontend
 
 | Capa | Tecnología |
 |---|---|
@@ -32,7 +60,7 @@ Plataforma basada en microservicios y Docker que permite la creación, despliegu
 | SVGs | vite-plugin-svgr |
 | Estilos | CSS Modules |
 
-### Infraestructura
+### 🏢 Infraestructura
 
 | Capa | Tecnología |
 |---|---|
@@ -270,7 +298,10 @@ server.listen(4060, () => {
 });
 ```
 
-**Prueba**: `celsius=0`
+**Prueba**: `celsius=0`  
+**Esperado**: `fahrenheit: 32, kelvin: 273.15`
+
+---
 
 **Servidor de rutas (Python)**
 Microservicio con múltiples rutas: saludo personalizado y consulta de usuario por ID.
@@ -326,7 +357,11 @@ class Handler(BaseHTTPRequestHandler):
 HTTPServer(("0.0.0.0", 4002), Handler).serve_forever()
 ```
 
-**Prueba**: `name=Ion`
+**Prueba**: `name=Ion`  
+**Esperado en /hello?name=ion**: `Hola ion`  
+**Esperado en /id/123**: `id: 123`  
+
+---
 
 **Validador de contraseñas**
 
@@ -359,7 +394,11 @@ const server = http.createServer((req, res) => {
 server.listen(4080, () => console.log('Auth Checker on 4080'));
 ```
 
-**Prueba**:
+**Prueba**:  
 ```json
-{ "password": "MiPasswordSegura123", "minLen": 10 }
-```
+{ 
+  "password": "MiPasswordSegura123", 
+  "minLen": 10 
+}
+```  
+**Esperado**: `valid`
